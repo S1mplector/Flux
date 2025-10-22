@@ -35,7 +35,7 @@ public sealed class GlobalHotkeyService : IHostedService, IDisposable
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
             var parameters = new HwndSourceParameters("GlobalHotkeySink")
             {
@@ -43,14 +43,14 @@ public sealed class GlobalHotkeyService : IHostedService, IDisposable
                 Height = 0,
                 PositionX = 0,
                 PositionY = 0,
-                WindowStyle = 0x80000000 /* WS_DISABLED */
+                WindowStyle = unchecked((int)0x80000000) /* WS_DISABLED */
             };
             _source = new HwndSource(parameters);
             _source.AddHook(WndProc);
             _hwnd = _source.Handle;
 
-            RegisterHotKey(_hwnd, HOTKEY_ID_TOGGLE_OVERLAY, MOD_CONTROL | MOD_ALT | MOD_SHIFT, (uint)KeyInterop.VirtualKeyFromKey(System.Windows.Input.Key.E));
-            RegisterHotKey(_hwnd, HOTKEY_ID_OPEN_SETTINGS, MOD_CONTROL | MOD_ALT | MOD_SHIFT, (uint)KeyInterop.VirtualKeyFromKey(System.Windows.Input.Key.S));
+            RegisterHotKey(_hwnd, HOTKEY_ID_TOGGLE_OVERLAY, MOD_CONTROL | MOD_ALT | MOD_SHIFT, (uint)System.Windows.Input.KeyInterop.VirtualKeyFromKey(System.Windows.Input.Key.E));
+            RegisterHotKey(_hwnd, HOTKEY_ID_OPEN_SETTINGS, MOD_CONTROL | MOD_ALT | MOD_SHIFT, (uint)System.Windows.Input.KeyInterop.VirtualKeyFromKey(System.Windows.Input.Key.S));
         });
         return Task.CompletedTask;
     }
@@ -59,7 +59,7 @@ public sealed class GlobalHotkeyService : IHostedService, IDisposable
     {
         if (_source != null)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 if (_hwnd != IntPtr.Zero)
                 {
@@ -87,7 +87,7 @@ public sealed class GlobalHotkeyService : IHostedService, IDisposable
                     handled = true;
                     break;
                 case HOTKEY_ID_OPEN_SETTINGS:
-                    Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                    System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                     {
                         if (!_settings.IsVisible) _settings.Show(); else { _settings.Activate(); _settings.Focus(); }
                     }));

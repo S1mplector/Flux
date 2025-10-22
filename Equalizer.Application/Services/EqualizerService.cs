@@ -23,7 +23,7 @@ public sealed class EqualizerService : IEqualizerService
     public async Task<float[]> GetBarsAsync(CancellationToken cancellationToken)
     {
         var settings = await _settings.GetAsync();
-        var frame = await _audio.ReadFrameAsync(minSamples: 4096, cancellationToken);
+        var frame = await _audio.ReadFrameAsync(minSamples: 1024, cancellationToken);
         var raw = _processor.ComputeBars(frame, settings.BarsCount);
 
         if (_previous == null || _previous.Length != raw.Length)

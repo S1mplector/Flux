@@ -25,10 +25,15 @@ public partial class OverlayWindow : Window
 
         _timer.Interval = TimeSpan.FromMilliseconds(33); // ~30 FPS
         _timer.Tick += async (_, __) => await RenderAsync();
-        Loaded += (_, __) => _timer.Start();
-        Unloaded += (_, __) => _timer.Stop();
+        Loaded += (_, __) => { _timer.Start(); System.Windows.Media.CompositionTarget.Rendering += OnRendering; };
+        Unloaded += (_, __) => { _timer.Stop(); System.Windows.Media.CompositionTarget.Rendering -= OnRendering; };
         Closed += (_, __) => _cts.Cancel();
         SizeChanged += (_, __) => LayoutBars();
+    }
+
+    private void OnRendering(object? sender, EventArgs e)
+    {
+        _ = RenderAsync();
     }
 
     private async Task RenderAsync()

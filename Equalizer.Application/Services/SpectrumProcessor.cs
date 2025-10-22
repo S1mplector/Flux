@@ -16,7 +16,7 @@ public sealed class SpectrumProcessor
 
         int n = NextPowerOfTwo(Math.Min(samples.Length, 4096));
         var complex = new Complex[n];
-        var winSum = 0.0;
+        var winSum = 0.0; // for potential window energy correction (not strictly needed if we normalize by N)
         for (int i = 0; i < n; i++)
         {
             double s = i < samples.Length ? samples[i] : 0.0;
@@ -30,9 +30,10 @@ public sealed class SpectrumProcessor
         var mag = new double[n / 2];
         for (int i = 0; i < mag.Length; i++)
         {
-            // Normalize by window sum to keep energy scale reasonable
+            // Amplitude normalization: MathNet forward FFT is unnormalized, scale ~ N
+            // Convert to single-sided amplitude spectrum in ~[-1,1] domain
             var c = complex[i];
-            mag[i] = (2.0 / winSum) * c.Magnitude; // 2x for single-sided spectrum
+            mag[i] = (2.0 / n) * c.Magnitude; // 2x for single-sided spectrum, divide by N
         }
 
         var result = new float[bars];
@@ -57,7 +58,8 @@ public sealed class SpectrumProcessor
             double avg = count > 0 ? sum / count : 0.0;
 
             double compressed = Math.Sqrt(avg); // perceptual compression
-            double scaled = compressed * 6.0;   // empirical gain
+            // Conservative gain to avoid saturation; add small headroom
+            double scaled = compressed * 1.8;   
             result[b] = (float)Math.Clamp(scaled, 0.0, 1.0);
         }
 
