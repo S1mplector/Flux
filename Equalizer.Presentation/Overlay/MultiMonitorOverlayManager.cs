@@ -129,6 +129,23 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
         }
     }
 
+    private static IEnumerable<Forms.Screen> GetTargetScreens(EqualizerSettings settings)
+    {
+        var all = Forms.Screen.AllScreens;
+        switch (settings.DisplayMode)
+        {
+            case MonitorDisplayMode.PrimaryOnly:
+                return new[] { Forms.Screen.PrimaryScreen ?? all.First() };
+            case MonitorDisplayMode.Specific:
+                var match = all.Where(s => string.Equals(s.DeviceName, settings.SpecificMonitorDeviceName, StringComparison.OrdinalIgnoreCase));
+                var selected = match.DefaultIfEmpty(Forms.Screen.PrimaryScreen ?? all.First());
+                return selected;
+            case MonitorDisplayMode.All:
+            default:
+                return all;
+        }
+    }
+
     private void ConfigureForScreen(OverlayWindow window, Forms.Screen screen)
     {
         window.WindowStartupLocation = WindowStartupLocation.Manual;

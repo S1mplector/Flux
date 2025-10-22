@@ -10,10 +10,12 @@ namespace Equalizer.Presentation.Settings;
 public partial class SettingsWindow : Window
 {
     private readonly ISettingsPort _settings;
+    private readonly Overlay.IOverlayManager _overlay;
 
-    public SettingsWindow(ISettingsPort settings)
+    public SettingsWindow(ISettingsPort settings, Overlay.IOverlayManager overlay)
     {
         _settings = settings;
+        _overlay = overlay;
         InitializeComponent();
         Loaded += OnLoaded;
         SaveButton.Click += OnSave;
@@ -109,6 +111,12 @@ public partial class SettingsWindow : Window
 
             var s = new EqualizerSettings(bars, resp, smooth, new ColorRgb(r, g, b), fps, cycle, cycleHz, radius, displayMode, deviceName);
             await _settings.SaveAsync(s);
+
+            // Immediately reflect changes in overlays
+            if (_overlay.IsVisible)
+            {
+                await _overlay.ShowAsync(); // re-applies monitor selection & styles
+            }
             Close();
         }
         catch (Exception ex)
