@@ -1708,6 +1708,16 @@
         "build": {
           "build/net6.0/xunit.runner.visualstudio.props": {}
         }
+      },
+      "Equalizer.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "compile": {
+          "bin/placeholder/Equalizer.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Equalizer.Domain.dll": {}
+        }
       }
     }
   },
@@ -5497,10 +5507,16 @@
         "xunit.runner.visualstudio.2.5.3.nupkg.sha512",
         "xunit.runner.visualstudio.nuspec"
       ]
+    },
+    "Equalizer.Domain/1.0.0": {
+      "type": "project",
+      "path": "../Equalizer.Domain/Equalizer.Domain.csproj",
+      "msbuildProject": "../Equalizer.Domain/Equalizer.Domain.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net8.0": [
+      "Equalizer.Domain >= 1.0.0",
       "Microsoft.NET.Test.Sdk >= 17.8.0",
       "coverlet.collector >= 6.0.0",
       "xunit >= 2.5.3",
@@ -5531,7 +5547,11 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "C:\\Users\\Sim\\Desktop\\Files\\Projects\\Equalizer\\Equalizer.Domain\\Equalizer.Domain.csproj": {
+              "projectPath": "C:\\Users\\Sim\\Desktop\\Files\\Projects\\Equalizer\\Equalizer.Domain\\Equalizer.Domain.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

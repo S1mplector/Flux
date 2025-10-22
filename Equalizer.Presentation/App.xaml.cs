@@ -3,13 +3,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Equalizer.Application.DependencyInjection;
 using Equalizer.Infrastructure.DependencyInjection;
+using Equalizer.Presentation.Overlay;
+using Equalizer.Presentation.Tray;
 
 namespace Equalizer.Presentation;
 
 /// <summary>
 /// Interaction logic for App.xaml
 /// </summary>
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     private IHost? _host;
 
@@ -23,16 +25,22 @@ public partial class App : Application
                 services.AddEqualizerApplication();
                 services.AddEqualizerInfrastructure();
                 services.AddSingleton<MainWindow>();
+                services.AddSingleton<IOverlayManager, OverlayManager>();
+                services.AddHostedService<TrayIconHostedService>();
             })
             .Build();
 
-        var window = _host.Services.GetRequiredService<MainWindow>();
-        window.Show();
+        // Start host so hosted services (tray icon) run
+        _host.StartAsync().GetAwaiter().GetResult();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _host?.Dispose();
+        if (_host != null)
+        {
+            _host.StopAsync().GetAwaiter().GetResult();
+            _host.Dispose();
+        }
         base.OnExit(e);
     }
 }
