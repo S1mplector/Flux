@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Equalizer.Application.Abstractions;
+using Equalizer.Application.Services;
 
 namespace Equalizer.Application.Services;
 
@@ -9,18 +10,21 @@ public sealed class EqualizerService : IEqualizerService
 {
     private readonly IAudioInputPort _audio;
     private readonly ISettingsPort _settings;
+    private readonly SpectrumProcessor _processor;
     private float[]? _previous;
 
-    public EqualizerService(IAudioInputPort audio, ISettingsPort settings)
+    public EqualizerService(IAudioInputPort audio, ISettingsPort settings, SpectrumProcessor processor)
     {
         _audio = audio;
         _settings = settings;
+        _processor = processor;
     }
 
     public async Task<float[]> GetBarsAsync(CancellationToken cancellationToken)
     {
         var settings = await _settings.GetAsync();
-        var raw = await _audio.GetSpectrumAsync(settings.BarsCount, cancellationToken);
+        var frame = await _audio.ReadFrameAsync(minSamples: 4096, cancellationToken);
+        var raw = _processor.ComputeBars(frame, settings.BarsCount);
 
         if (_previous == null || _previous.Length != raw.Length)
             _previous = new float[raw.Length];

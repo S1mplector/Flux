@@ -9,7 +9,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddEqualizerInfrastructure(this IServiceCollection services)
     {
-        services.AddSingleton<IAudioInputPort, RandomAudioInput>();
+        services.AddSingleton<IAudioInputPort, WASAPILoopbackAudioInput>();
         services.AddSingleton<ISettingsPort, InMemorySettingsRepository>();
         return services;
     }

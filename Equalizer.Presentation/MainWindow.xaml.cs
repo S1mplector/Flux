@@ -17,7 +17,7 @@ namespace Equalizer.Presentation;
 public partial class MainWindow : Window
 {
     private readonly IEqualizerService _service;
-    private readonly List<Rectangle> _bars = new();
+    private readonly List<System.Windows.Shapes.Rectangle> _bars = new();
     private readonly DispatcherTimer _timer = new();
     private readonly CancellationTokenSource _cts = new();
     private bool _rendering;
@@ -75,10 +75,10 @@ public partial class MainWindow : Window
         BarsCanvas.Children.Clear();
         _bars.Clear();
 
-        var brush = new SolidColorBrush(Color.FromRgb(0, 255, 128));
+        var brush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 255, 128));
         for (int i = 0; i < count; i++)
         {
-            var r = new Rectangle
+            var r = new System.Windows.Shapes.Rectangle
             {
                 Fill = brush,
                 RadiusX = 1,
