@@ -29,7 +29,7 @@ public sealed class WASAPILoopbackAudioInput : IAudioInputPort, IDisposable
         _capture = new WasapiLoopbackCapture(device);
         SampleRate = _capture.WaveFormat.SampleRate;
         Channels = _capture.WaveFormat.Channels;
-        _maxQueueSamples = Math.Max(SampleRate / 4, 2048); // keep ~250ms of mono samples max
+        _maxQueueSamples = Math.Max(SampleRate / 6, 2048); // keep ~165ms of mono samples max to reduce latency
         _capture.DataAvailable += OnDataAvailable;
         _capture.RecordingStopped += (_, __) => _dataAvailable.Release();
         _capture.StartRecording();

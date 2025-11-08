@@ -12,6 +12,8 @@ public sealed class EqualizerSettings
     public double BarCornerRadius { get; }
     public MonitorDisplayMode DisplayMode { get; }
     public string? SpecificMonitorDeviceName { get; }
+    public double OffsetX { get; }
+    public double OffsetY { get; }
 
     public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color)
     {
@@ -32,11 +34,14 @@ public sealed class EqualizerSettings
         BarCornerRadius = 1.0;
         DisplayMode = MonitorDisplayMode.All;
         SpecificMonitorDeviceName = null;
+        OffsetX = 0.0;
+        OffsetY = 0.0;
     }
 
     public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color,
         int targetFps, bool colorCycleEnabled, double colorCycleSpeedHz, double barCornerRadius,
-        MonitorDisplayMode displayMode, string? specificMonitorDeviceName)
+        MonitorDisplayMode displayMode, string? specificMonitorDeviceName,
+        double offsetX, double offsetY)
         : this(barsCount, responsiveness, smoothing, color)
     {
         if (targetFps < 10 || targetFps > 240)
@@ -52,6 +57,8 @@ public sealed class EqualizerSettings
         BarCornerRadius = barCornerRadius;
         DisplayMode = displayMode;
         SpecificMonitorDeviceName = specificMonitorDeviceName;
+        OffsetX = offsetX;
+        OffsetY = offsetY;
     }
 
     public static EqualizerSettings Default => new(
@@ -64,6 +71,8 @@ public sealed class EqualizerSettings
         colorCycleSpeedHz: 0.2,
         barCornerRadius: 1.0,
         displayMode: MonitorDisplayMode.All,
-        specificMonitorDeviceName: null
+        specificMonitorDeviceName: null,
+        offsetX: 0.0,
+        offsetY: 0.0
     );
 }

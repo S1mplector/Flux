@@ -17,6 +17,10 @@ public sealed class EqualizerService : IEqualizerService
     private readonly double[] _fluxHistory = new double[64];
     private int _fluxIndex;
     private int _fluxCount;
+    private readonly object _frameLock = new();
+    private Task<VisualizerFrame>? _inFlight;
+    private VisualizerFrame? _lastFrameCache;
+    private DateTime _lastFrameAt;
 
     public EqualizerService(IAudioInputPort audio, ISettingsPort settings, SpectrumProcessor processor)
     {
@@ -34,7 +38,39 @@ public sealed class EqualizerService : IEqualizerService
     public async Task<VisualizerFrame> GetVisualizerFrameAsync(CancellationToken cancellationToken)
     {
         var settings = await _settings.GetAsync();
-        var audioFrame = await _audio.ReadFrameAsync(minSamples: 1024, cancellationToken);
+        var now = DateTime.UtcNow;
+        var minIntervalMs = 1000.0 / Math.Clamp(settings.TargetFps, 10, 240);
+        if (_lastFrameCache != null && (now - _lastFrameAt).TotalMilliseconds < minIntervalMs)
+        {
+            return _lastFrameCache;
+        }
+
+        Task<VisualizerFrame>? task = null;
+        lock (_frameLock)
+        {
+            if (_inFlight != null && !_inFlight.IsCompleted)
+            {
+                task = _inFlight;
+            }
+            else
+            {
+                _inFlight = ComputeFrameInternalAsync(cancellationToken);
+                task = _inFlight;
+            }
+        }
+
+        var vf = await task;
+        _lastFrameCache = vf;
+        _lastFrameAt = DateTime.UtcNow;
+        return vf;
+    }
+
+    private async Task<VisualizerFrame> ComputeFrameInternalAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var settings = await _settings.GetAsync();
+            var audioFrame = await _audio.ReadFrameAsync(minSamples: 1024, cancellationToken);
 
         // Silence detection to prevent backlog-looking playback after pause
         double rms = 0;
@@ -123,5 +159,16 @@ public sealed class EqualizerService : IEqualizerService
         float beatStrength = isBeatFlag ? (float)Math.Clamp((flux - threshold) / Math.Max(threshold, 1e-6), 0.0, 1.0) : 0f;
 
         return new VisualizerFrame(output, bass, mid, treble, isBeatFlag, beatStrength);
+        }
+        finally
+        {
+            lock (_frameLock)
+            {
+                if (_inFlight != null && _inFlight.IsCompleted)
+                {
+                    _inFlight = null;
+                }
+            }
+        }
     }
 }

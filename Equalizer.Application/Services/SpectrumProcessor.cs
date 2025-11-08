@@ -8,6 +8,12 @@ namespace Equalizer.Application.Services;
 
 public sealed class SpectrumProcessor
 {
+    private readonly object _lock = new();
+    private Complex[]? _complex;
+    private double[]? _mag;
+    private double[]? _hann;
+    private int _n;
+
     public float[] ComputeBars(AudioFrame frame, int bars)
     {
         if (bars <= 0) return Array.Empty<float>();
@@ -22,21 +28,37 @@ public sealed class SpectrumProcessor
     {
         var samples = frame.Samples;
         int n = NextPowerOfTwo(Math.Min(samples.Length, 4096));
-        var complex = new Complex[n];
-        for (int i = 0; i < n; i++)
+        lock (_lock)
         {
-            double s = i < samples.Length ? samples[i] : 0.0;
-            double w = 0.5 * (1 - Math.Cos(2 * Math.PI * i / (n - 1))); // Hann window
-            complex[i] = new Complex(s * w, 0);
+            if (n != _n || _complex == null || _hann == null || _mag == null)
+            {
+                _n = n;
+                _complex = new Complex[n];
+                _hann = new double[n];
+                for (int i = 0; i < n; i++)
+                {
+                    _hann[i] = 0.5 * (1 - Math.Cos(2 * Math.PI * i / (n - 1))); // Hann window
+                }
+                _mag = new double[n / 2];
+            }
+
+            var complex = _complex!;
+            var hann = _hann!;
+            for (int i = 0; i < n; i++)
+            {
+                double s = i < samples.Length ? samples[i] : 0.0;
+                complex[i] = new Complex(s * hann[i], 0);
+            }
+
+            Fourier.Forward(complex, FourierOptions.Matlab);
+            var mag = _mag!;
+            for (int i = 0; i < mag.Length; i++)
+            {
+                var c = complex[i];
+                mag[i] = (2.0 / n) * c.Magnitude;
+            }
+            return mag;
         }
-        Fourier.Forward(complex, FourierOptions.Matlab);
-        var mag = new double[n / 2];
-        for (int i = 0; i < mag.Length; i++)
-        {
-            var c = complex[i];
-            mag[i] = (2.0 / n) * c.Magnitude;
-        }
-        return mag;
     }
 
     public float[] ComputeBarsFromMagnitudes(double[] mag, int sampleRate, int bars)

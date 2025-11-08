@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Equalizer.Application.Abstractions;
+using Equalizer.Application.Models;
 using Equalizer.Domain;
 
 namespace Equalizer.Presentation.Overlay;
@@ -16,13 +17,21 @@ public partial class OverlayWindow : Window
     private readonly IEqualizerService _service;
     private readonly ISettingsPort _settings;
     private readonly List<System.Windows.Shapes.Rectangle> _bars = new();
-    private readonly DispatcherTimer _timer = new();
+    private readonly List<System.Windows.Shapes.Rectangle> _peakBars = new();
     private readonly CancellationTokenSource _cts = new();
     private bool _rendering;
     private SolidColorBrush _barBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 255, 128));
     private DateTime _lastFrame = DateTime.MinValue;
     private double _cyclePhase;
     private double _beatPulse;
+    private Task<VisualizerFrame>? _pendingFrameTask;
+    private VisualizerFrame? _lastFrameData;
+    private float[]? _peaks;
+    private SolidColorBrush _peakBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
+    private readonly TranslateTransform _offset = new TranslateTransform();
+    private bool _isDragging;
+    private Point _dragStartPoint;
+    private Point _startOffset;
 
     public OverlayWindow(IEqualizerService service, ISettingsPort settings)
     {
@@ -30,12 +39,24 @@ public partial class OverlayWindow : Window
         _settings = settings;
         InitializeComponent();
 
-        _timer.Interval = TimeSpan.FromMilliseconds(33); // ~30 FPS
-        _timer.Tick += async (_, __) => await RenderAsync();
-        Loaded += (_, __) => { _timer.Start(); System.Windows.Media.CompositionTarget.Rendering += OnRendering; };
-        Unloaded += (_, __) => { _timer.Stop(); System.Windows.Media.CompositionTarget.Rendering -= OnRendering; };
+        Loaded += (_, __) => { System.Windows.Media.CompositionTarget.Rendering += OnRendering; };
+        Unloaded += (_, __) => { System.Windows.Media.CompositionTarget.Rendering -= OnRendering; };
         Closed += (_, __) => _cts.Cancel();
         SizeChanged += (_, __) => LayoutBars();
+        BarsCanvas.RenderTransform = _offset;
+        BarsCanvas.MouseLeftButtonDown += BarsCanvas_MouseLeftButtonDown;
+        BarsCanvas.MouseMove += BarsCanvas_MouseMove;
+        BarsCanvas.MouseLeftButtonUp += BarsCanvas_MouseLeftButtonUp;
+        SaveMoveButton.Click += SaveMoveButton_Click;
+        CancelMoveButton.Click += CancelMoveButton_Click;
+        _ = ApplyInitialOffsetAsync();
+    }
+
+    private async Task ApplyInitialOffsetAsync()
+    {
+        var s = await _settings.GetAsync();
+        _offset.X = s.OffsetX;
+        _offset.Y = s.OffsetY;
     }
 
     private void OnRendering(object? sender, EventArgs e)
@@ -60,7 +81,17 @@ public partial class OverlayWindow : Window
             }
             _lastFrame = now;
 
-            var vf = await _service.GetVisualizerFrameAsync(_cts.Token);
+            if (_pendingFrameTask == null || _pendingFrameTask.IsCompleted)
+            {
+                _pendingFrameTask = _service.GetVisualizerFrameAsync(_cts.Token);
+            }
+            if (_pendingFrameTask != null && _pendingFrameTask.IsCompletedSuccessfully)
+            {
+                _lastFrameData = _pendingFrameTask.Result;
+            }
+
+            var vf = _lastFrameData;
+            if (vf == null) return;
             var data = vf.Bars;
             EnsureBars(data.Length);
 
@@ -101,6 +132,17 @@ public partial class OverlayWindow : Window
                 rect.RadiusY = s.BarCornerRadius;
                 Canvas.SetLeft(rect, left);
                 Canvas.SetTop(rect, top);
+
+                if (_peaks == null || _peaks.Length != data.Length) _peaks = new float[data.Length];
+                var amp = (float)Math.Clamp(data[i] * scale, 0.0, 1.0);
+                var decayed = _peaks[i] * 0.985f;
+                _peaks[i] = Math.Max(decayed, amp);
+                var peakH = Math.Max(1.0, _peaks[i] * height);
+                var peakRect = _peakBars[i];
+                peakRect.Width = barWidth;
+                peakRect.Height = Math.Max(2.0, Math.Min(4.0, height * 0.01));
+                Canvas.SetLeft(peakRect, left);
+                Canvas.SetTop(peakRect, Math.Max(0.0, height - peakH - peakRect.Height));
             }
         }
         finally
@@ -114,6 +156,8 @@ public partial class OverlayWindow : Window
         if (_bars.Count == count) return;
         BarsCanvas.Children.Clear();
         _bars.Clear();
+        _peakBars.Clear();
+        _peaks = count > 0 ? new float[count] : null;
 
         for (int i = 0; i < count; i++)
         {
@@ -125,6 +169,13 @@ public partial class OverlayWindow : Window
             };
             _bars.Add(r);
             BarsCanvas.Children.Add(r);
+            var peak = new System.Windows.Shapes.Rectangle
+            {
+                Fill = _peakBrush,
+                Opacity = 0.85
+            };
+            _peakBars.Add(peak);
+            BarsCanvas.Children.Add(peak);
         }
         LayoutBars();
     }
@@ -144,7 +195,57 @@ public partial class OverlayWindow : Window
             var rect = _bars[i];
             rect.Width = barWidth;
             Canvas.SetLeft(rect, left);
+            var peak = _peakBars[i];
+            peak.Width = barWidth;
+            Canvas.SetLeft(peak, left);
         }
+    }
+
+    private void BarsCanvas_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        _isDragging = true;
+        _dragStartPoint = e.GetPosition(this);
+        _startOffset = new Point(_offset.X, _offset.Y);
+        BarsCanvas.CaptureMouse();
+        ConfirmPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void BarsCanvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (!_isDragging) return;
+        var p = e.GetPosition(this);
+        var dx = p.X - _dragStartPoint.X;
+        var dy = p.Y - _dragStartPoint.Y;
+        _offset.X = _startOffset.X + dx;
+        _offset.Y = _startOffset.Y + dy;
+    }
+
+    private void BarsCanvas_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (!_isDragging) return;
+        _isDragging = false;
+        BarsCanvas.ReleaseMouseCapture();
+        ConfirmPanel.Visibility = Visibility.Visible;
+    }
+
+    private async void SaveMoveButton_Click(object sender, RoutedEventArgs e)
+    {
+        var s = await _settings.GetAsync();
+        var updated = new EqualizerSettings(
+            s.BarsCount, s.Responsiveness, s.Smoothing, s.Color,
+            s.TargetFps, s.ColorCycleEnabled, s.ColorCycleSpeedHz, s.BarCornerRadius,
+            s.DisplayMode, s.SpecificMonitorDeviceName,
+            _offset.X, _offset.Y);
+        await _settings.SaveAsync(updated);
+        ConfirmPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private async void CancelMoveButton_Click(object sender, RoutedEventArgs e)
+    {
+        var s = await _settings.GetAsync();
+        _offset.X = s.OffsetX;
+        _offset.Y = s.OffsetY;
+        ConfirmPanel.Visibility = Visibility.Collapsed;
     }
 
     private static System.Windows.Media.Color LerpColor(System.Windows.Media.Color a, System.Windows.Media.Color b, float t)

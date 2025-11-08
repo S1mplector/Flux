@@ -18,21 +18,25 @@ public partial class MainWindow : Window
 {
     private readonly IEqualizerService _service;
     private readonly List<System.Windows.Shapes.Rectangle> _bars = new();
-    private readonly DispatcherTimer _timer = new();
     private readonly CancellationTokenSource _cts = new();
     private bool _rendering;
+    private DateTime _lastFrame = DateTime.MinValue;
+    private Task<float[]>? _pendingBars;
+    private float[]? _lastBars;
 
     public MainWindow(IEqualizerService service)
     {
         _service = service;
         InitializeComponent();
-
-        _timer.Interval = TimeSpan.FromMilliseconds(33); // ~30 FPS
-        _timer.Tick += async (_, __) => await RenderAsync();
-        Loaded += (_, __) => _timer.Start();
-        Unloaded += (_, __) => _timer.Stop();
+        Loaded += (_, __) => System.Windows.Media.CompositionTarget.Rendering += OnRendering;
+        Unloaded += (_, __) => System.Windows.Media.CompositionTarget.Rendering -= OnRendering;
         Closed += (_, __) => _cts.Cancel();
         SizeChanged += (_, __) => LayoutBars();
+    }
+
+    private void OnRendering(object? sender, EventArgs e)
+    {
+        _ = RenderAsync();
     }
 
     private async Task RenderAsync()
@@ -41,7 +45,26 @@ public partial class MainWindow : Window
         _rendering = true;
         try
         {
-            var data = await _service.GetBarsAsync(_cts.Token);
+            var now = DateTime.UtcNow;
+            var minIntervalMs = 1000.0 / 60.0; // target ~60 FPS
+            if (_lastFrame != DateTime.MinValue)
+            {
+                var dt = (now - _lastFrame).TotalMilliseconds;
+                if (dt < minIntervalMs) return;
+            }
+            _lastFrame = now;
+
+            if (_pendingBars == null || _pendingBars.IsCompleted)
+            {
+                _pendingBars = _service.GetBarsAsync(_cts.Token);
+            }
+            if (_pendingBars != null && _pendingBars.IsCompletedSuccessfully)
+            {
+                _lastBars = _pendingBars.Result;
+            }
+
+            var data = _lastBars;
+            if (data == null) return;
             EnsureBars(data.Length);
 
             var width = BarsCanvas.ActualWidth;
