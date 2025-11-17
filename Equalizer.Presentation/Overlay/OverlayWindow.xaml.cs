@@ -30,8 +30,8 @@ public partial class OverlayWindow : Window
     private SolidColorBrush _peakBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
     private readonly TranslateTransform _offset = new TranslateTransform();
     private bool _isDragging;
-    private Point _dragStartPoint;
-    private Point _startOffset;
+    private System.Windows.Point _dragStartPoint;
+    private System.Windows.Point _startOffset;
 
     public OverlayWindow(IEqualizerService service, ISettingsPort settings)
     {
@@ -205,7 +205,7 @@ public partial class OverlayWindow : Window
     {
         _isDragging = true;
         _dragStartPoint = e.GetPosition(this);
-        _startOffset = new Point(_offset.X, _offset.Y);
+        _startOffset = new System.Windows.Point(_offset.X, _offset.Y);
         BarsCanvas.CaptureMouse();
         ConfirmPanel.Visibility = Visibility.Collapsed;
     }

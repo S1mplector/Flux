@@ -37,7 +37,7 @@ public sealed class EqualizerSettings
         OffsetX = 0.0;
         OffsetY = 0.0;
     }
-
+ 
     public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color,
         int targetFps, bool colorCycleEnabled, double colorCycleSpeedHz, double barCornerRadius,
         MonitorDisplayMode displayMode, string? specificMonitorDeviceName,
@@ -59,6 +59,16 @@ public sealed class EqualizerSettings
         SpecificMonitorDeviceName = specificMonitorDeviceName;
         OffsetX = offsetX;
         OffsetY = offsetY;
+    }
+
+    // Backward-compatible overload without offsets
+    public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color,
+        int targetFps, bool colorCycleEnabled, double colorCycleSpeedHz, double barCornerRadius,
+        MonitorDisplayMode displayMode, string? specificMonitorDeviceName)
+        : this(barsCount, responsiveness, smoothing, color,
+            targetFps, colorCycleEnabled, colorCycleSpeedHz, barCornerRadius,
+            displayMode, specificMonitorDeviceName, 0.0, 0.0)
+    {
     }
 
     public static EqualizerSettings Default => new(
