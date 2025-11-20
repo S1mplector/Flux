@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using Equalizer.Application.Abstractions;
 using Equalizer.Application.Models;
 using Equalizer.Domain;
+using Forms = System.Windows.Forms;
 
 namespace Equalizer.Presentation.Overlay;
 
@@ -32,6 +33,7 @@ public partial class OverlayWindow : Window
     private bool _isDragging;
     private System.Windows.Point _dragStartPoint;
     private System.Windows.Point _startOffset;
+    private ColorRgb? _quickColorOverride;
 
     public OverlayWindow(IEqualizerService service, ISettingsPort settings)
     {
@@ -47,8 +49,12 @@ public partial class OverlayWindow : Window
         BarsCanvas.MouseLeftButtonDown += BarsCanvas_MouseLeftButtonDown;
         BarsCanvas.MouseMove += BarsCanvas_MouseMove;
         BarsCanvas.MouseLeftButtonUp += BarsCanvas_MouseLeftButtonUp;
+        BarsCanvas.MouseRightButtonUp += BarsCanvas_MouseRightButtonUp;
         SaveMoveButton.Click += SaveMoveButton_Click;
         CancelMoveButton.Click += CancelMoveButton_Click;
+        QuickApplyButton.Click += QuickApplyButton_Click;
+        QuickCancelButton.Click += QuickCancelButton_Click;
+        QuickColorButton.Click += QuickColorButton_Click;
         _ = ApplyInitialOffsetAsync();
     }
 
@@ -228,6 +234,25 @@ public partial class OverlayWindow : Window
         ConfirmPanel.Visibility = Visibility.Visible;
     }
 
+    private async void BarsCanvas_MouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (QuickSettingsPanel.Visibility == Visibility.Visible)
+        {
+            QuickSettingsPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var s = await _settings.GetAsync();
+        QuickBarsSlider.Value = s.BarsCount;
+        QuickColorCycleEnabled.IsChecked = s.ColorCycleEnabled;
+        _quickColorOverride = s.Color;
+    
+        var preview = System.Windows.Media.Color.FromRgb(s.Color.R, s.Color.G, s.Color.B);
+        QuickColorButton.Background = new SolidColorBrush(preview);
+
+        QuickSettingsPanel.Visibility = Visibility.Visible;
+    }
+
     private async void SaveMoveButton_Click(object sender, RoutedEventArgs e)
     {
         var s = await _settings.GetAsync();
@@ -246,6 +271,66 @@ public partial class OverlayWindow : Window
         _offset.X = s.OffsetX;
         _offset.Y = s.OffsetY;
         ConfirmPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private async void QuickApplyButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var s = await _settings.GetAsync();
+            int bars = (int)QuickBarsSlider.Value;
+            bool cycle = QuickColorCycleEnabled.IsChecked == true;
+
+            var color = _quickColorOverride ?? s.Color;
+
+            var updated = new EqualizerSettings(
+                bars,
+                s.Responsiveness,
+                s.Smoothing,
+                color,
+                s.TargetFps,
+                cycle,
+                s.ColorCycleSpeedHz,
+                s.BarCornerRadius,
+                s.DisplayMode,
+                s.SpecificMonitorDeviceName,
+                s.OffsetX,
+                s.OffsetY);
+
+            await _settings.SaveAsync(updated);
+            QuickSettingsPanel.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception)
+        {
+            // Swallow invalid quick settings to avoid intrusive dialogs from the overlay
+        }
+    }
+
+    private void QuickCancelButton_Click(object sender, RoutedEventArgs e)
+    {
+        QuickSettingsPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void QuickColorButton_Click(object? sender, RoutedEventArgs e)
+    {
+        var current = _quickColorOverride;
+        using var dlg = new Forms.ColorDialog
+        {
+            AllowFullOpen = true,
+            AnyColor = true,
+            FullOpen = true,
+            Color = System.Drawing.Color.FromArgb(
+                current?.R ?? 0,
+                current?.G ?? 255,
+                current?.B ?? 128)
+        };
+        if (dlg.ShowDialog() == Forms.DialogResult.OK)
+        {
+            var rgb = new ColorRgb(dlg.Color.R, dlg.Color.G, dlg.Color.B);
+            _quickColorOverride = rgb;
+            var preview = System.Windows.Media.Color.FromRgb(rgb.R, rgb.G, rgb.B);
+            QuickColorButton.Background = new SolidColorBrush(preview);
+        }
     }
 
     private static System.Windows.Media.Color LerpColor(System.Windows.Media.Color a, System.Windows.Media.Color b, float t)
