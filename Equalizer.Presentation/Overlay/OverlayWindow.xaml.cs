@@ -330,7 +330,7 @@ public partial class OverlayWindow : Window
             s.TargetFps, s.ColorCycleEnabled, s.ColorCycleSpeedHz, s.BarCornerRadius,
             s.DisplayMode, s.SpecificMonitorDeviceName,
             _offset.X, _offset.Y,
-            s.VisualizerMode, s.CircleDiameter);
+            s.VisualizerMode, s.CircleDiameter, s.OverlayVisible);
         await _settings.SaveAsync(updated);
         ConfirmPanel.Visibility = Visibility.Collapsed;
     }
@@ -367,7 +367,8 @@ public partial class OverlayWindow : Window
                 s.OffsetX,
                 s.OffsetY,
                 s.VisualizerMode,
-                s.CircleDiameter);
+                s.CircleDiameter,
+                s.OverlayVisible);
 
             await _settings.SaveAsync(updated);
             QuickSettingsPanel.Visibility = Visibility.Collapsed;

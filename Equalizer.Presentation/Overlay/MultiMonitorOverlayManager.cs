@@ -49,6 +49,7 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
                 }
             }
         });
+        await SaveOverlayVisibleAsync(true);
     }
 
     public async Task HideAsync()
@@ -60,6 +61,7 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
                 if (win.IsVisible) win.Hide();
             }
         });
+        await SaveOverlayVisibleAsync(false);
     }
 
     public Task ToggleAsync() => IsVisible ? HideAsync() : ShowAsync();
@@ -104,7 +106,8 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
             s.TargetFps, s.ColorCycleEnabled, s.ColorCycleSpeedHz, s.BarCornerRadius,
             s.DisplayMode, s.SpecificMonitorDeviceName,
             offsetX: 0.0, offsetY: 0.0,
-            s.VisualizerMode, s.CircleDiameter);
+            s.VisualizerMode, s.CircleDiameter,
+            s.OverlayVisible);
         await _settings.SaveAsync(updated);
 
         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -114,6 +117,19 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
                 win.ResetOffset();
             }
         });
+    }
+
+    private async Task SaveOverlayVisibleAsync(bool visible)
+    {
+        var s = await _settings.GetAsync();
+        var updated = new EqualizerSettings(
+            s.BarsCount, s.Responsiveness, s.Smoothing, s.Color,
+            s.TargetFps, s.ColorCycleEnabled, s.ColorCycleSpeedHz, s.BarCornerRadius,
+            s.DisplayMode, s.SpecificMonitorDeviceName,
+            s.OffsetX, s.OffsetY,
+            s.VisualizerMode, s.CircleDiameter,
+            overlayVisible: visible);
+        await _settings.SaveAsync(updated);
     }
 
     private void EnsureWindows(IEnumerable<Forms.Screen> targetScreens)

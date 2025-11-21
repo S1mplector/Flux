@@ -6,6 +6,7 @@ using Equalizer.Infrastructure.DependencyInjection;
 using Equalizer.Presentation.Overlay;
 using Equalizer.Presentation.Tray;
 using Equalizer.Presentation.Hotkeys;
+using Equalizer.Application.Abstractions;
 
 namespace Equalizer.Presentation;
 
@@ -36,6 +37,15 @@ public partial class App : System.Windows.Application
 
         // Start host so hosted services (tray icon) run
         _host.StartAsync().GetAwaiter().GetResult();
+
+        // Restore overlay visibility from last session
+        var settingsPort = _host.Services.GetRequiredService<ISettingsPort>();
+        var overlay = _host.Services.GetRequiredService<IOverlayManager>();
+        var s = settingsPort.GetAsync().GetAwaiter().GetResult();
+        if (s.OverlayVisible)
+        {
+            overlay.ShowAsync().GetAwaiter().GetResult();
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

@@ -16,6 +16,7 @@ public sealed class EqualizerSettings
     public double OffsetY { get; }
     public VisualizerMode VisualizerMode { get; }
     public double CircleDiameter { get; }
+    public bool OverlayVisible { get; }
 
     public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color)
         : this(barsCount, responsiveness, smoothing, color,
@@ -75,6 +76,20 @@ public sealed class EqualizerSettings
         MonitorDisplayMode displayMode, string? specificMonitorDeviceName,
         double offsetX, double offsetY,
         VisualizerMode visualizerMode, double circleDiameter)
+        : this(barsCount, responsiveness, smoothing, color,
+            targetFps, colorCycleEnabled, colorCycleSpeedHz, barCornerRadius,
+            displayMode, specificMonitorDeviceName,
+            offsetX, offsetY,
+            visualizerMode, circleDiameter, overlayVisible: true)
+    {
+    }
+
+    // Full constructor including offsets, visualizer configuration, and overlay visibility
+    public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color,
+        int targetFps, bool colorCycleEnabled, double colorCycleSpeedHz, double barCornerRadius,
+        MonitorDisplayMode displayMode, string? specificMonitorDeviceName,
+        double offsetX, double offsetY,
+        VisualizerMode visualizerMode, double circleDiameter, bool overlayVisible)
     {
         if (barsCount < 8 || barsCount > 256)
             throw new ArgumentOutOfRangeException(nameof(barsCount), "BarsCount must be between 8 and 256.");
@@ -105,6 +120,7 @@ public sealed class EqualizerSettings
         OffsetY = offsetY;
         VisualizerMode = visualizerMode;
         CircleDiameter = circleDiameter;
+        OverlayVisible = overlayVisible;
     }
 
     public static EqualizerSettings Default => new(
@@ -121,6 +137,7 @@ public sealed class EqualizerSettings
         offsetX: 0.0,
         offsetY: 0.0,
         visualizerMode: VisualizerMode.Bars,
-        circleDiameter: 400.0
+        circleDiameter: 400.0,
+        overlayVisible: true
     );
 }

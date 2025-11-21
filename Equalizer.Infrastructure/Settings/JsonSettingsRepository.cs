@@ -79,13 +79,14 @@ public sealed class JsonSettingsRepository : ISettingsPort
         public double OffsetY { get; set; } = 0.0;
         public int VisualizerMode { get; set; } = 0; // VisualizerMode.Bars
         public double CircleDiameter { get; set; } = 400.0;
+        public bool OverlayVisible { get; set; } = true;
 
         public EqualizerSettings ToDomain() => new EqualizerSettings(
             BarsCount, Responsiveness, Smoothing, new ColorRgb(ColorR, ColorG, ColorB),
             TargetFps, ColorCycleEnabled, ColorCycleSpeedHz, BarCornerRadius,
             (MonitorDisplayMode)DisplayMode, SpecificMonitorDeviceName,
             OffsetX, OffsetY,
-            (VisualizerMode)VisualizerMode, CircleDiameter);
+            (VisualizerMode)VisualizerMode, CircleDiameter, OverlayVisible);
 
         public static SettingsDto FromDomain(EqualizerSettings s) => new SettingsDto
         {
@@ -104,7 +105,8 @@ public sealed class JsonSettingsRepository : ISettingsPort
             OffsetX = s.OffsetX,
             OffsetY = s.OffsetY,
             VisualizerMode = (int)s.VisualizerMode,
-            CircleDiameter = s.CircleDiameter
+            CircleDiameter = s.CircleDiameter,
+            OverlayVisible = s.OverlayVisible
         };
     }
 }

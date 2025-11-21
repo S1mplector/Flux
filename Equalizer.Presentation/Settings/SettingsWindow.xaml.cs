@@ -102,6 +102,7 @@ public partial class SettingsWindow : Window
     {
         try
         {
+            var current = await _settings.GetAsync();
             int bars = (int)BarsSlider.Value;
             double resp = RespSlider.Value;
             double smooth = SmoothSlider.Value;
@@ -121,7 +122,14 @@ public partial class SettingsWindow : Window
             if (displayMode == MonitorDisplayMode.Specific && MonitorCombo.SelectedItem is ComboBoxItem sel)
                 deviceName = sel.Tag as string;
 
-            var s = new EqualizerSettings(bars, resp, smooth, new ColorRgb(r, g, b), fps, cycle, cycleHz, radius, displayMode, deviceName, visualizerMode, circleDiameter);
+            // Preserve existing offsets and overlay visibility when saving from settings
+            var s = new EqualizerSettings(
+                bars, resp, smooth, new ColorRgb(r, g, b),
+                fps, cycle, cycleHz, radius,
+                displayMode, deviceName,
+                current.OffsetX, current.OffsetY,
+                visualizerMode, circleDiameter,
+                current.OverlayVisible);
             await _settings.SaveAsync(s);
 
             // Immediately reflect changes in overlays
