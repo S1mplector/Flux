@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Equalizer.Application.Abstractions;
 using Equalizer.Application.Services;
 using Equalizer.Application.Models;
+using Equalizer.Domain;
 
 namespace Equalizer.Application.Services;
 
@@ -54,7 +55,7 @@ public sealed class EqualizerService : IEqualizerService
             }
             else
             {
-                _inFlight = ComputeFrameInternalAsync(cancellationToken);
+                _inFlight = ComputeFrameInternalAsync(settings, cancellationToken);
                 task = _inFlight;
             }
         }
@@ -65,11 +66,10 @@ public sealed class EqualizerService : IEqualizerService
         return vf;
     }
 
-    private async Task<VisualizerFrame> ComputeFrameInternalAsync(CancellationToken cancellationToken)
+    private async Task<VisualizerFrame> ComputeFrameInternalAsync(EqualizerSettings settings, CancellationToken cancellationToken)
     {
         try
         {
-            var settings = await _settings.GetAsync();
             var audioFrame = await _audio.ReadFrameAsync(minSamples: 1024, cancellationToken);
 
         // Silence detection to prevent backlog-looking playback after pause

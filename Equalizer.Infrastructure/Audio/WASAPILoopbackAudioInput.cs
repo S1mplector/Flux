@@ -29,7 +29,7 @@ public sealed class WASAPILoopbackAudioInput : IAudioInputPort, IDisposable
         _capture = new WasapiLoopbackCapture(device);
         SampleRate = _capture.WaveFormat.SampleRate;
         Channels = _capture.WaveFormat.Channels;
-        _maxQueueSamples = Math.Max(SampleRate / 6, 2048); // keep ~165ms of mono samples max to reduce latency
+        _maxQueueSamples = Math.Max(SampleRate / 16, 2048); // keep ~60ms of mono samples max to reduce latency
         _capture.DataAvailable += OnDataAvailable;
         _capture.RecordingStopped += (_, __) => _dataAvailable.Release();
         _capture.StartRecording();
@@ -232,7 +232,8 @@ public sealed class WASAPILoopbackAudioInput : IAudioInputPort, IDisposable
             }
             if (!haveEnough)
             {
-                await _dataAvailable.WaitAsync(TimeSpan.FromMilliseconds(15), cancellationToken);
+                // Poll for new audio more frequently to reduce end-to-end latency
+                await _dataAvailable.WaitAsync(TimeSpan.FromMilliseconds(5), cancellationToken);
                 continue;
             }
 
