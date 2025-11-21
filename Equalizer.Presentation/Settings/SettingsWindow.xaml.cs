@@ -201,7 +201,6 @@ public partial class SettingsWindow : Window
             {
                 await _overlay.ShowAsync(); // re-applies monitor selection & styles
             }
-            Close();
         }
         catch (Exception ex)
         {

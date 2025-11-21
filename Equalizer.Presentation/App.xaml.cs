@@ -8,6 +8,7 @@ using Equalizer.Presentation.Overlay;
 using Equalizer.Presentation.Tray;
 using Equalizer.Presentation.Hotkeys;
 using Equalizer.Application.Abstractions;
+using Equalizer.Presentation.Splash;
 
 namespace Equalizer.Presentation;
 
@@ -23,37 +24,62 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
-        _host = Host.CreateDefaultBuilder()
-            .ConfigureServices(services =>
-            {
-                services.AddEqualizerApplication();
-                services.AddEqualizerInfrastructure();
-                services.AddSingleton<IOverlayManager, MultiMonitorOverlayManager>();
-                services.AddTransient<Overlay.OverlayWindow>();
-                services.AddTransient<Settings.SettingsWindow>();
-                services.AddHostedService<TrayIconHostedService>();
-                services.AddHostedService<GlobalHotkeyService>();
-            })
-            .Build();
+        var splash = new SplashWindow();
+        splash.Show();
 
         // Fire-and-forget async startup so we don't block the UI thread
-        _ = StartHostAndRestoreOverlayAsync();
+        _ = InitializeAsync(splash);
     }
 
-    private async Task StartHostAndRestoreOverlayAsync()
+    private async Task InitializeAsync(SplashWindow splash)
     {
-        if (_host == null) return;
-
-        // Start host so hosted services (tray icon, hotkeys) run
-        await _host.StartAsync();
-
-        // Restore overlay visibility from last session
-        var settingsPort = _host.Services.GetRequiredService<ISettingsPort>();
-        var overlay = _host.Services.GetRequiredService<IOverlayManager>();
-        var s = await settingsPort.GetAsync();
-        if (s.OverlayVisible)
+        try
         {
-            await overlay.ShowAsync();
+            splash.SetStatus("Building services...");
+
+            // Small pause so the user can see each startup phase
+            await Task.Delay(180);
+
+            _host = Host.CreateDefaultBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.AddEqualizerApplication();
+                    services.AddEqualizerInfrastructure();
+                    services.AddSingleton<IOverlayManager, MultiMonitorOverlayManager>();
+                    services.AddTransient( typeof(Overlay.OverlayWindow));
+                    services.AddTransient(typeof(Settings.SettingsWindow));
+                    services.AddHostedService<TrayIconHostedService>();
+                    services.AddHostedService<GlobalHotkeyService>();
+                })
+                .Build();
+
+            splash.SetStatus("Starting background services...");
+            await Task.Delay(180);
+            await _host.StartAsync();
+
+            splash.SetStatus("Loading settings and caching data...");
+            await Task.Delay(180);
+            var settingsPort = _host.Services.GetRequiredService<ISettingsPort>();
+            var overlay = _host.Services.GetRequiredService<IOverlayManager>();
+            var s = await settingsPort.GetAsync();
+
+            if (s.OverlayVisible)
+            {
+                splash.SetStatus("Restoring overlay...");
+                await Task.Delay(180);
+                await overlay.ShowAsync();
+            }
+
+            splash.SetStatus("Ready");
+            await Task.Delay(220);
+        }
+        catch (System.Exception ex)
+        {
+            System.Windows.MessageBox.Show(ex.Message, "Startup error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            splash.Dispatcher.Invoke(() => splash.Close());
         }
     }
 
