@@ -106,6 +106,7 @@ public partial class SettingsWindow : Window
         FpsSlider.Value = s.TargetFps;
         FpsValue.Text = s.TargetFps.ToString();
         ColorCycleEnabled.IsChecked = s.ColorCycleEnabled;
+        PitchReactiveColorEnabledCheckBox.IsChecked = s.PitchReactiveColorEnabled;
         ColorCycleSpeed.Value = s.ColorCycleSpeedHz;
         ColorCycleSpeedValue.Text = s.ColorCycleSpeedHz.ToString("0.00");
         CornerRadiusSlider.Value = s.BarCornerRadius;
@@ -172,6 +173,7 @@ public partial class SettingsWindow : Window
 
             int fps = (int)FpsSlider.Value;
             bool cycle = ColorCycleEnabled.IsChecked == true;
+            bool pitchReactive = PitchReactiveColorEnabledCheckBox.IsChecked == true;
             double cycleHz = ColorCycleSpeed.Value;
             double radius = CornerRadiusSlider.Value;
 
@@ -193,7 +195,8 @@ public partial class SettingsWindow : Window
                 current.OffsetX, current.OffsetY,
                 visualizerMode, circleDiameter,
                 current.OverlayVisible, fadeOnSilence,
-                fadeOutSeconds, fadeInSeconds);
+                fadeOutSeconds, fadeInSeconds,
+                pitchReactive);
             await _settings.SaveAsync(s);
 
             // Immediately reflect changes in overlays

@@ -20,6 +20,7 @@ public sealed class EqualizerSettings
     public bool FadeOnSilenceEnabled { get; }
     public double SilenceFadeOutSeconds { get; }
     public double SilenceFadeInSeconds { get; }
+    public bool PitchReactiveColorEnabled { get; }
 
     public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color)
         : this(barsCount, responsiveness, smoothing, color,
@@ -108,7 +109,7 @@ public sealed class EqualizerSettings
     {
     }
 
-    // Most complete constructor including fade-on-silence timings
+    // Backward-compatible full constructor without pitch-reactive color flag
     public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color,
         int targetFps, bool colorCycleEnabled, double colorCycleSpeedHz, double barCornerRadius,
         MonitorDisplayMode displayMode, string? specificMonitorDeviceName,
@@ -116,6 +117,26 @@ public sealed class EqualizerSettings
         VisualizerMode visualizerMode, double circleDiameter,
         bool overlayVisible, bool fadeOnSilenceEnabled,
         double silenceFadeOutSeconds, double silenceFadeInSeconds)
+        : this(barsCount, responsiveness, smoothing, color,
+            targetFps, colorCycleEnabled, colorCycleSpeedHz, barCornerRadius,
+            displayMode, specificMonitorDeviceName,
+            offsetX, offsetY,
+            visualizerMode, circleDiameter,
+            overlayVisible, fadeOnSilenceEnabled,
+            silenceFadeOutSeconds, silenceFadeInSeconds,
+            pitchReactiveColorEnabled: false)
+    {
+    }
+
+    // Most complete constructor including fade-on-silence timings and pitch-reactive color flag
+    public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color,
+        int targetFps, bool colorCycleEnabled, double colorCycleSpeedHz, double barCornerRadius,
+        MonitorDisplayMode displayMode, string? specificMonitorDeviceName,
+        double offsetX, double offsetY,
+        VisualizerMode visualizerMode, double circleDiameter,
+        bool overlayVisible, bool fadeOnSilenceEnabled,
+        double silenceFadeOutSeconds, double silenceFadeInSeconds,
+        bool pitchReactiveColorEnabled)
     {
         if (barsCount < 8 || barsCount > 256)
             throw new ArgumentOutOfRangeException(nameof(barsCount), "BarsCount must be between 8 and 256.");
@@ -154,6 +175,7 @@ public sealed class EqualizerSettings
         FadeOnSilenceEnabled = fadeOnSilenceEnabled;
         SilenceFadeOutSeconds = silenceFadeOutSeconds;
         SilenceFadeInSeconds = silenceFadeInSeconds;
+        PitchReactiveColorEnabled = pitchReactiveColorEnabled;
     }
 
     public static EqualizerSettings Default => new(
@@ -174,6 +196,7 @@ public sealed class EqualizerSettings
         overlayVisible: true,
         fadeOnSilenceEnabled: false,
         silenceFadeOutSeconds: 0.5,
-        silenceFadeInSeconds: 0.2
+        silenceFadeInSeconds: 0.2,
+        pitchReactiveColorEnabled: false
     );
 }

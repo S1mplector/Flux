@@ -23,6 +23,7 @@ public sealed class EqualizerService : IEqualizerService
     private VisualizerFrame? _lastFrameCache;
     private DateTime _lastFrameAt;
     private double _silenceFade = 1.0; // 1=fully visible, 0=fully faded
+    private DateTime _lastBeatAt = DateTime.MinValue;
 
     public EqualizerService(IAudioInputPort audio, ISettingsPort settings, SpectrumProcessor processor)
     {
@@ -156,6 +157,50 @@ public sealed class EqualizerService : IEqualizerService
         var mid = band("mid", 250, 2000);
         var treble = band("treble", 2000, 16000);
 
+        // Tonal / pitch analysis (simple chroma-based dominant pitch class)
+        float pitchHue = 0f;
+        float pitchStrength = 0f;
+        if (!isSilent && mag.Length > 4)
+        {
+            var chroma = new double[12];
+            double chromaTotal = 0.0;
+
+            for (int i = 1; i < mag.Length; i++)
+            {
+                double f = (double)i / (mag.Length - 1) * nyquist;
+                if (f < 60.0 || f > 5000.0) continue;
+                double m = mag[i];
+                if (m <= 0) continue;
+
+                double midi = 69.0 + 12.0 * Math.Log(f / 440.0, 2.0);
+                if (double.IsNaN(midi) || double.IsInfinity(midi)) continue;
+                int note = (int)Math.Round(midi);
+                int pc = ((note % 12) + 12) % 12;
+                chroma[pc] += m;
+                chromaTotal += m;
+            }
+
+            if (chromaTotal > 1e-6)
+            {
+                int bestIndex = 0;
+                double bestValue = 0.0;
+                for (int k = 0; k < 12; k++)
+                {
+                    if (chroma[k] > bestValue)
+                    {
+                        bestValue = chroma[k];
+                        bestIndex = k;
+                    }
+                }
+
+                if (bestValue > 0.0)
+                {
+                    pitchHue = (float)(bestIndex / 12.0); // 0..1 mapped around the color wheel
+                    pitchStrength = (float)Math.Clamp(bestValue / chromaTotal, 0.0, 1.0);
+                }
+            }
+        }
+
         // Spectral flux beat detection
         double flux = 0;
         if (isSilent)
@@ -163,31 +208,78 @@ public sealed class EqualizerService : IEqualizerService
             // Reset beat state on silence
             if (_prevMag != null) Array.Clear(_prevMag, 0, _prevMag.Length);
             Array.Clear(_fluxHistory, 0, _fluxHistory.Length);
-            _fluxIndex = 0; _fluxCount = 0;
+            _fluxIndex = 0;
+            _fluxCount = 0;
         }
         else
         {
-            if (_prevMag == null || _prevMag.Length != mag.Length) _prevMag = new double[mag.Length];
-            for (int i = 0; i < mag.Length; i++)
+            if (_prevMag == null || _prevMag.Length != mag.Length)
             {
-                var diff = mag[i] - _prevMag[i];
-                if (diff > 0) flux += diff;
+                _prevMag = new double[mag.Length];
+                Array.Copy(mag, _prevMag, mag.Length);
+                flux = 0;
             }
-            Array.Copy(mag, _prevMag, mag.Length);
+            else
+            {
+                double magSum = 0;
+                for (int i = 0; i < mag.Length; i++)
+                {
+                    var m = mag[i];
+                    magSum += m;
+                    var diff = m - _prevMag[i];
+                    if (diff > 0) flux += diff;
+                    _prevMag[i] = m;
+                }
+
+                // Normalize by overall spectral energy so beats remain visible
+                // even when listening at lower volumes.
+                if (magSum > 1e-9)
+                    flux /= magSum;
+            }
         }
 
-        // Maintain history
+        // Maintain history for adaptive thresholding
         _fluxHistory[_fluxIndex] = flux;
         _fluxIndex = (_fluxIndex + 1) % _fluxHistory.Length;
         _fluxCount = Math.Min(_fluxCount + 1, _fluxHistory.Length);
 
-        double mean = 0; for (int i = 0; i < _fluxCount; i++) mean += _fluxHistory[i]; mean /= Math.Max(1, _fluxCount);
-        double var = 0; for (int i = 0; i < _fluxCount; i++) { var += (_fluxHistory[i] - mean) * (_fluxHistory[i] - mean); }
+        double mean = 0;
+        for (int i = 0; i < _fluxCount; i++) mean += _fluxHistory[i];
+        mean /= Math.Max(1, _fluxCount);
+
+        double var = 0;
+        for (int i = 0; i < _fluxCount; i++)
+        {
+            double d = _fluxHistory[i] - mean;
+            var += d * d;
+        }
         var /= Math.Max(1, _fluxCount);
         double std = Math.Sqrt(var);
-        double threshold = mean + 1.5 * std;
-        bool isBeatFlag = !isSilent && flux > threshold && flux > 1e-6;
-        float beatStrength = isBeatFlag ? (float)Math.Clamp((flux - threshold) / Math.Max(threshold, 1e-6), 0.0, 1.0) : 0f;
+
+        // Slightly lower threshold for a more responsive beat detector,
+        // but keep it adaptive to local dynamics.
+        double threshold = mean + 1.2 * std;
+
+        bool isBeatFlag = false;
+        float beatStrength = 0f;
+
+        bool candidate = !isSilent && _fluxCount > 4 && flux > threshold && flux > 1e-6;
+        if (candidate)
+        {
+            var nowBeat = DateTime.UtcNow;
+            var sinceLastMs = (nowBeat - _lastBeatAt).TotalMilliseconds;
+
+            // Basic refractory period (~80ms) to avoid double-triggers on a single hit
+            if (_lastBeatAt == DateTime.MinValue || sinceLastMs >= 80.0)
+            {
+                isBeatFlag = true;
+                _lastBeatAt = nowBeat;
+
+                var excess = flux - threshold;
+                var denom = threshold * 0.5 + 1e-6; // map moderate peaks to a healthy strength
+                beatStrength = (float)Math.Clamp(excess / denom, 0.0, 1.0);
+            }
+        }
 
         // Smooth global fade factor for silence-based fading
         float silenceFadeValue = 1f;
@@ -212,7 +304,7 @@ public sealed class EqualizerService : IEqualizerService
             silenceFadeValue = (float)_silenceFade;
         }
 
-        return new VisualizerFrame(output, bass, mid, treble, isBeatFlag, beatStrength, silenceFadeValue);
+        return new VisualizerFrame(output, bass, mid, treble, isBeatFlag, beatStrength, silenceFadeValue, pitchHue, pitchStrength);
         }
         finally
         {

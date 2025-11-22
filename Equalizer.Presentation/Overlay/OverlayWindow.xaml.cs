@@ -110,7 +110,13 @@ public partial class OverlayWindow : Window
             var spacing = 2.0;
 
             var color = s.Color;
-            if (s.ColorCycleEnabled)
+            if (s.PitchReactiveColorEnabled && vf.PitchStrength > 0.1f)
+            {
+                var hueDeg = vf.PitchHue * 360.0;
+                var rgb = HsvToRgb(hueDeg, 1.0, 1.0);
+                color = new ColorRgb((byte)rgb.r, (byte)rgb.g, (byte)rgb.b);
+            }
+            else if (s.ColorCycleEnabled)
             {
                 _cyclePhase += s.ColorCycleSpeedHz * (minIntervalMs / 1000.0) * 360.0;
                 _cyclePhase %= 360.0;
@@ -118,8 +124,8 @@ public partial class OverlayWindow : Window
                 color = new ColorRgb((byte)rgb.r, (byte)rgb.g, (byte)rgb.b);
             }
             // Beat pulse
-            if (vf.IsBeat) _beatPulse = Math.Min(1.0, _beatPulse + vf.BeatStrength * 0.8);
-            _beatPulse *= 0.9; // decay
+            if (vf.IsBeat) _beatPulse = Math.Min(1.0, _beatPulse + vf.BeatStrength * 1.2);
+            _beatPulse *= 0.94; // slightly slower decay for a more visible pulse
 
             var baseColor = System.Windows.Media.Color.FromRgb(color.R, color.G, color.B);
             var pulsed = LerpColor(baseColor, System.Windows.Media.Colors.White, (float)(0.35 * _beatPulse));
@@ -147,8 +153,8 @@ public partial class OverlayWindow : Window
         var barWidth = Math.Max(1.0, (width - spacing * (data.Length - 1)) / data.Length);
         for (int i = 0; i < data.Length; i++)
         {
-            // Slight bass/treble emphasis and beat pulse scaling
-            var scale = 1.0 + 0.12 * vf.Bass + 0.06 * vf.Treble + 0.1 * _beatPulse;
+            // Slight bass/treble emphasis and stronger beat pulse scaling
+            var scale = 1.0 + 0.12 * vf.Bass + 0.06 * vf.Treble + 0.18 * _beatPulse;
             var h = Math.Max(1.0, data[i] * height * scale * fade);
             var left = i * (barWidth + spacing);
             var top = height - h;
@@ -198,7 +204,7 @@ public partial class OverlayWindow : Window
 
         for (int i = 0; i < data.Length; i++)
         {
-            var scale = 1.0 + 0.12 * vf.Bass + 0.06 * vf.Treble + 0.1 * _beatPulse;
+            var scale = 1.0 + 0.12 * vf.Bass + 0.06 * vf.Treble + 0.18 * _beatPulse;
             var amp = Math.Clamp(data[i] * scale * fade, 0.0, 1.0);
             var radius = innerRadius + (outerRadius - innerRadius) * amp;
 
@@ -336,7 +342,8 @@ public partial class OverlayWindow : Window
             _offset.X, _offset.Y,
             s.VisualizerMode, s.CircleDiameter,
             s.OverlayVisible, s.FadeOnSilenceEnabled,
-            s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds);
+            s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds,
+            s.PitchReactiveColorEnabled);
         await _settings.SaveAsync(updated);
         ConfirmPanel.Visibility = Visibility.Collapsed;
     }
@@ -377,7 +384,8 @@ public partial class OverlayWindow : Window
                 s.OverlayVisible,
                 s.FadeOnSilenceEnabled,
                 s.SilenceFadeOutSeconds,
-                s.SilenceFadeInSeconds);
+                s.SilenceFadeInSeconds,
+                s.PitchReactiveColorEnabled);
 
             await _settings.SaveAsync(updated);
             QuickSettingsPanel.Visibility = Visibility.Collapsed;

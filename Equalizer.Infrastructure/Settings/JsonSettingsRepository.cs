@@ -83,6 +83,7 @@ public sealed class JsonSettingsRepository : ISettingsPort
         public bool FadeOnSilenceEnabled { get; set; } = false;
         public double SilenceFadeOutSeconds { get; set; } = 0.5;
         public double SilenceFadeInSeconds { get; set; } = 0.2;
+        public bool PitchReactiveColorEnabled { get; set; } = false;
 
         public EqualizerSettings ToDomain() => new EqualizerSettings(
             BarsCount, Responsiveness, Smoothing, new ColorRgb(ColorR, ColorG, ColorB),
@@ -90,7 +91,8 @@ public sealed class JsonSettingsRepository : ISettingsPort
             (MonitorDisplayMode)DisplayMode, SpecificMonitorDeviceName,
             OffsetX, OffsetY,
             (VisualizerMode)VisualizerMode, CircleDiameter, OverlayVisible, FadeOnSilenceEnabled,
-            SilenceFadeOutSeconds, SilenceFadeInSeconds);
+            SilenceFadeOutSeconds, SilenceFadeInSeconds,
+            PitchReactiveColorEnabled);
 
         public static SettingsDto FromDomain(EqualizerSettings s) => new SettingsDto
         {
@@ -113,7 +115,8 @@ public sealed class JsonSettingsRepository : ISettingsPort
             OverlayVisible = s.OverlayVisible,
             FadeOnSilenceEnabled = s.FadeOnSilenceEnabled,
             SilenceFadeOutSeconds = s.SilenceFadeOutSeconds,
-            SilenceFadeInSeconds = s.SilenceFadeInSeconds
+            SilenceFadeInSeconds = s.SilenceFadeInSeconds,
+            PitchReactiveColorEnabled = s.PitchReactiveColorEnabled
         };
     }
 }

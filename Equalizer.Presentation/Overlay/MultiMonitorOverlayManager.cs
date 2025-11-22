@@ -108,7 +108,8 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
             offsetX: 0.0, offsetY: 0.0,
             s.VisualizerMode, s.CircleDiameter,
             s.OverlayVisible, s.FadeOnSilenceEnabled,
-            s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds);
+            s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds,
+            s.PitchReactiveColorEnabled);
         await _settings.SaveAsync(updated);
 
         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -132,7 +133,8 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
             overlayVisible: visible,
             fadeOnSilenceEnabled: s.FadeOnSilenceEnabled,
             silenceFadeOutSeconds: s.SilenceFadeOutSeconds,
-            silenceFadeInSeconds: s.SilenceFadeInSeconds);
+            silenceFadeInSeconds: s.SilenceFadeInSeconds,
+            pitchReactiveColorEnabled: s.PitchReactiveColorEnabled);
         await _settings.SaveAsync(updated);
     }
 
