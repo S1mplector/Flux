@@ -111,7 +111,6 @@ public partial class SettingsWindow : Window
         FpsSlider.Value = s.TargetFps;
         FpsValue.Text = s.TargetFps.ToString();
         ColorCycleEnabled.IsChecked = s.ColorCycleEnabled;
-        PitchReactiveColorEnabledCheckBox.IsChecked = s.PitchReactiveColorEnabled;
         ColorCycleSpeed.Value = s.ColorCycleSpeedHz;
         ColorCycleSpeedValue.Text = s.ColorCycleSpeedHz.ToString("0.00");
         CornerRadiusSlider.Value = s.BarCornerRadius;
@@ -165,7 +164,6 @@ public partial class SettingsWindow : Window
         TrebleEmphasisSlider.Value = s.TrebleEmphasis;
         TrebleEmphasisValue.Text = s.TrebleEmphasis.ToString("0.00");
 
-        BeatShapeEnabledCheckBox.IsChecked = s.BeatShapeEnabled;
         GlowEnabledCheckBox.IsChecked = s.GlowEnabled;
 
         // Performance profile (infer from current values)
@@ -186,7 +184,6 @@ public partial class SettingsWindow : Window
 
             int fps = (int)FpsSlider.Value;
             bool cycle = ColorCycleEnabled.IsChecked == true;
-            bool pitchReactive = PitchReactiveColorEnabledCheckBox.IsChecked == true;
             double cycleHz = ColorCycleSpeed.Value;
             double radius = CornerRadiusSlider.Value;
 
@@ -198,7 +195,6 @@ public partial class SettingsWindow : Window
             double fadeInSeconds = FadeInSlider.Value;
             double bassEmphasis = BassEmphasisSlider.Value;
             double trebleEmphasis = TrebleEmphasisSlider.Value;
-            bool beatShape = BeatShapeEnabledCheckBox.IsChecked == true;
             bool glow = GlowEnabledCheckBox.IsChecked == true;
             string? deviceName = null;
             if (displayMode == MonitorDisplayMode.Specific && MonitorCombo.SelectedItem is ComboBoxItem sel)
@@ -213,9 +209,9 @@ public partial class SettingsWindow : Window
                 visualizerMode, circleDiameter,
                 current.OverlayVisible, fadeOnSilence,
                 fadeOutSeconds, fadeInSeconds,
-                pitchReactive,
+                pitchReactiveColorEnabled: false,
                 bassEmphasis, trebleEmphasis,
-                beatShape, glow, current.PerfOverlayEnabled);
+                beatShapeEnabled: false, glowEnabled: glow, perfOverlayEnabled: current.PerfOverlayEnabled);
             await _settings.SaveAsync(s);
 
             // Immediately reflect changes in overlays

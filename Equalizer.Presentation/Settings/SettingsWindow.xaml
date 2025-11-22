@@ -75,9 +75,6 @@
         </StackPanel>
         
 
-        <TextBlock Grid.Row="6" Grid.Column="0" Text="Pitch-reactive color" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <CheckBox x:Name="PitchReactiveColorEnabledCheckBox" Grid.Row="6" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
-
         <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3" Text="Performance" FontWeight="Bold" Margin="0,12,0,4"/>
 
         <TextBlock Grid.Row="8" Grid.Column="0" Text="Target FPS" VerticalAlignment="Center" Margin="0,8,8,0"/>
@@ -150,11 +147,8 @@
         <Slider x:Name="TrebleEmphasisSlider" Grid.Row="25" Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.1" Margin="0,8,0,0"/>
         <TextBox x:Name="TrebleEmphasisValue" Grid.Row="25" Grid.Column="2" Margin="8,8,0,0"/>
 
-        <TextBlock Grid.Row="26" Grid.Column="0" Text="Beat/pitch shape" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <CheckBox x:Name="BeatShapeEnabledCheckBox" Grid.Row="26" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
-
-        <TextBlock Grid.Row="27" Grid.Column="0" Text="Glow effect" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <CheckBox x:Name="GlowEnabledCheckBox" Grid.Row="27" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
+        <TextBlock Grid.Row="26" Grid.Column="0" Text="Glow effect" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <CheckBox x:Name="GlowEnabledCheckBox" Grid.Row="26" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
 
         </Grid>
         </ScrollViewer>

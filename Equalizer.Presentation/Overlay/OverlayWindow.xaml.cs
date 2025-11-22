@@ -124,13 +124,7 @@ public partial class OverlayWindow : Window
             var spacing = 2.0;
 
             var color = s.Color;
-            if (s.PitchReactiveColorEnabled && vf.PitchStrength > 0.1f)
-            {
-                var hueDeg = vf.PitchHue * 360.0;
-                var rgb = HsvToRgb(hueDeg, 1.0, 1.0);
-                color = new ColorRgb((byte)rgb.r, (byte)rgb.g, (byte)rgb.b);
-            }
-            else if (s.ColorCycleEnabled)
+            if (s.ColorCycleEnabled)
             {
                 _cyclePhase += s.ColorCycleSpeedHz * (minIntervalMs / 1000.0) * 360.0;
                 _cyclePhase %= 360.0;
@@ -513,9 +507,9 @@ public partial class OverlayWindow : Window
             s.VisualizerMode, s.CircleDiameter,
             s.OverlayVisible, s.FadeOnSilenceEnabled,
             s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds,
-            s.PitchReactiveColorEnabled,
+            pitchReactiveColorEnabled: false,
             s.BassEmphasis, s.TrebleEmphasis,
-            s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
+            beatShapeEnabled: false, s.GlowEnabled, s.PerfOverlayEnabled);
         await _settings.SaveAsync(updated);
         ConfirmPanel.Visibility = Visibility.Collapsed;
     }
@@ -557,9 +551,9 @@ public partial class OverlayWindow : Window
                 s.FadeOnSilenceEnabled,
                 s.SilenceFadeOutSeconds,
                 s.SilenceFadeInSeconds,
-                s.PitchReactiveColorEnabled,
+                pitchReactiveColorEnabled: false,
                 s.BassEmphasis, s.TrebleEmphasis,
-                s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
+                beatShapeEnabled: false, s.GlowEnabled, s.PerfOverlayEnabled);
 
             await _settings.SaveAsync(updated);
             QuickSettingsPanel.Visibility = Visibility.Collapsed;
