@@ -35,6 +35,14 @@ public partial class OverlayWindow : Window
     private System.Windows.Point _dragStartPoint;
     private System.Windows.Point _startOffset;
     private ColorRgb? _quickColorOverride;
+    private readonly List<System.Windows.Shapes.Line> _circleLines = new();
+    private readonly List<System.Windows.Shapes.Line> _circleGlowLines = new();
+    private VisualizerMode? _lastMode;
+    private int _lastBarCount = -1;
+    private readonly object _settingsCacheLock = new();
+    private EqualizerSettings? _settingsSnapshot;
+    private DateTime _settingsSnapshotAt;
+    private Task<EqualizerSettings>? _settingsFetchTask;
 
     public OverlayWindow(IEqualizerService service, ISettingsPort settings)
     {
@@ -80,7 +88,9 @@ public partial class OverlayWindow : Window
         _rendering = true;
         try
         {
-            var s = await _settings.GetAsync();
+            if (!IsVisible) return;
+
+            var s = await GetSettingsSnapshotAsync();
 
             var now = DateTime.UtcNow;
             var minIntervalMs = 1000.0 / Math.Clamp(s.TargetFps, 10, 240);
@@ -137,11 +147,30 @@ public partial class OverlayWindow : Window
 
             if (s.VisualizerMode == VisualizerMode.Circular)
             {
+                if (_lastMode != VisualizerMode.Circular || _circleLines.Count != data.Length)
+                {
+                    ClearAllShapes();
+                    EnsureCircularLines(data.Length, s.GlowEnabled);
+                    _lastMode = VisualizerMode.Circular;
+                    _lastBarCount = data.Length;
+                }
+                else if (_lastBarCount != data.Length)
+                {
+                    EnsureCircularLines(data.Length, s.GlowEnabled);
+                    _lastBarCount = data.Length;
+                }
                 RenderCircular(vf, data, s, width, height);
             }
             else
             {
+                if (_lastMode != VisualizerMode.Bars)
+                {
+                    ClearAllShapes();
+                    _lastMode = VisualizerMode.Bars;
+                    _lastBarCount = -1;
+                }
                 EnsureBars(data.Length);
+                _lastBarCount = data.Length;
                 RenderLinearBars(vf, data, s, width, height, spacing);
             }
 
@@ -237,7 +266,6 @@ public partial class OverlayWindow : Window
 
     private void RenderCircular(VisualizerFrame vf, float[] data, EqualizerSettings s, double width, double height)
     {
-        BarsCanvas.Children.Clear();
         if (data.Length == 0) return;
 
         var fade = Math.Clamp(vf.SilenceFade, 0f, 1f);
@@ -288,35 +316,32 @@ public partial class OverlayWindow : Window
             }
 
             // Optional glow: a thicker, low-opacity line behind the main bar
-            if (s.GlowEnabled)
+            if (s.GlowEnabled && _circleGlowLines.Count == data.Length)
             {
-                var glowLine = new System.Windows.Shapes.Line
-                {
-                    X1 = x1,
-                    Y1 = y1,
-                    X2 = x2,
-                    Y2 = y2,
-                    Stroke = _barBrush,
-                    StrokeThickness = localThickness * 1.5,
-                    StrokeStartLineCap = PenLineCap.Round,
-                    StrokeEndLineCap = PenLineCap.Round,
-                    Opacity = 0.3
-                };
-                BarsCanvas.Children.Add(glowLine);
+                var glowLine = _circleGlowLines[i];
+                glowLine.X1 = x1;
+                glowLine.Y1 = y1;
+                glowLine.X2 = x2;
+                glowLine.Y2 = y2;
+                glowLine.StrokeThickness = localThickness * 1.5;
+                glowLine.Opacity = 0.3;
+                if (!ReferenceEquals(glowLine.Stroke, _barBrush)) glowLine.Stroke = _barBrush;
+            }
+            else if (_circleGlowLines.Count == data.Length)
+            {
+                _circleGlowLines[i].Opacity = 0.0;
             }
 
-            var line = new System.Windows.Shapes.Line
+            if (_circleLines.Count == data.Length)
             {
-                X1 = x1,
-                Y1 = y1,
-                X2 = x2,
-                Y2 = y2,
-                Stroke = _barBrush,
-                StrokeThickness = localThickness,
-                StrokeStartLineCap = PenLineCap.Round,
-                StrokeEndLineCap = PenLineCap.Round
-            };
-            BarsCanvas.Children.Add(line);
+                var line = _circleLines[i];
+                line.X1 = x1;
+                line.Y1 = y1;
+                line.X2 = x2;
+                line.Y2 = y2;
+                line.StrokeThickness = localThickness;
+                if (!ReferenceEquals(line.Stroke, _barBrush)) line.Stroke = _barBrush;
+            }
         }
     }
 
@@ -378,6 +403,52 @@ public partial class OverlayWindow : Window
             var peak = _peakBars[i];
             peak.Width = barWidth;
             Canvas.SetLeft(peak, left);
+        }
+    }
+
+    private void ClearAllShapes()
+    {
+        BarsCanvas.Children.Clear();
+        _bars.Clear();
+        _peakBars.Clear();
+        _glowBars.Clear();
+        _circleLines.Clear();
+        _circleGlowLines.Clear();
+        _peaks = null;
+    }
+
+    private void EnsureCircularLines(int count, bool glowEnabled)
+    {
+        if (_circleLines.Count == count && (!glowEnabled || _circleGlowLines.Count == count))
+            return;
+
+        ClearAllShapes();
+
+        for (int i = 0; i < count; i++)
+        {
+            if (glowEnabled)
+            {
+                var glowLine = new System.Windows.Shapes.Line
+                {
+                    Stroke = _barBrush,
+                    StrokeThickness = 1.0,
+                    StrokeStartLineCap = PenLineCap.Round,
+                    StrokeEndLineCap = PenLineCap.Round,
+                    Opacity = 0.0
+                };
+                _circleGlowLines.Add(glowLine);
+                BarsCanvas.Children.Add(glowLine);
+            }
+
+            var line = new System.Windows.Shapes.Line
+            {
+                Stroke = _barBrush,
+                StrokeThickness = 1.0,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round
+            };
+            _circleLines.Add(line);
+            BarsCanvas.Children.Add(line);
         }
     }
 
@@ -583,5 +654,34 @@ public partial class OverlayWindow : Window
             case 5: r = v; g = p; b = q; break;
         }
         return ((int)(r * 255), (int)(g * 255), (int)(b * 255));
+    }
+
+    private Task<EqualizerSettings> GetSettingsSnapshotAsync()
+    {
+        lock (_settingsCacheLock)
+        {
+            if (_settingsSnapshot != null && (DateTime.UtcNow - _settingsSnapshotAt).TotalMilliseconds < 500)
+            {
+                return Task.FromResult(_settingsSnapshot);
+            }
+
+            if (_settingsFetchTask == null || _settingsFetchTask.IsCompleted)
+            {
+                _settingsFetchTask = FetchSettingsAsync();
+            }
+
+            return _settingsFetchTask;
+        }
+    }
+
+    private async Task<EqualizerSettings> FetchSettingsAsync()
+    {
+        var s = await _settings.GetAsync();
+        lock (_settingsCacheLock)
+        {
+            _settingsSnapshot = s;
+            _settingsSnapshotAt = DateTime.UtcNow;
+        }
+        return s;
     }
 }
