@@ -18,6 +18,7 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
     private readonly Dictionary<string, OverlayWindow> _windows = new();
     private bool _clickThrough;
     private bool _alwaysOnTop;
+    private bool _isVisible;
 
     public MultiMonitorOverlayManager(IServiceProvider services, ISettingsPort settings)
     {
@@ -25,7 +26,7 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
         _settings = settings;
     }
 
-    public bool IsVisible => _windows.Values.Any(w => w.IsVisible);
+    public bool IsVisible => _isVisible;
     public bool ClickThrough => _clickThrough;
     public bool AlwaysOnTop => _alwaysOnTop;
 
@@ -49,6 +50,7 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
                 }
             }
         });
+        _isVisible = true;
         await SaveOverlayVisibleAsync(true);
     }
 
@@ -61,6 +63,7 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
                 if (win.IsVisible) win.Hide();
             }
         });
+        _isVisible = false;
         await SaveOverlayVisibleAsync(false);
     }
 
@@ -109,9 +112,9 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
             s.VisualizerMode, s.CircleDiameter,
             s.OverlayVisible, s.FadeOnSilenceEnabled,
             s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds,
-            pitchReactiveColorEnabled: false,
+            pitchReactiveColorEnabled: s.PitchReactiveColorEnabled,
             s.BassEmphasis, s.TrebleEmphasis,
-            beatShapeEnabled: false, s.GlowEnabled, s.PerfOverlayEnabled);
+            beatShapeEnabled: s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
         await _settings.SaveAsync(updated);
 
         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -136,10 +139,10 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
             fadeOnSilenceEnabled: s.FadeOnSilenceEnabled,
             silenceFadeOutSeconds: s.SilenceFadeOutSeconds,
             silenceFadeInSeconds: s.SilenceFadeInSeconds,
-            pitchReactiveColorEnabled: false,
+            pitchReactiveColorEnabled: s.PitchReactiveColorEnabled,
             bassEmphasis: s.BassEmphasis,
             trebleEmphasis: s.TrebleEmphasis,
-            beatShapeEnabled: false,
+            beatShapeEnabled: s.BeatShapeEnabled,
             glowEnabled: s.GlowEnabled,
             perfOverlayEnabled: s.PerfOverlayEnabled);
         await _settings.SaveAsync(updated);

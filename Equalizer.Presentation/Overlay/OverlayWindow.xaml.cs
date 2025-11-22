@@ -507,9 +507,9 @@ public partial class OverlayWindow : Window
             s.VisualizerMode, s.CircleDiameter,
             s.OverlayVisible, s.FadeOnSilenceEnabled,
             s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds,
-            pitchReactiveColorEnabled: false,
+            pitchReactiveColorEnabled: s.PitchReactiveColorEnabled,
             s.BassEmphasis, s.TrebleEmphasis,
-            beatShapeEnabled: false, s.GlowEnabled, s.PerfOverlayEnabled);
+            beatShapeEnabled: s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
         await _settings.SaveAsync(updated);
         ConfirmPanel.Visibility = Visibility.Collapsed;
     }
@@ -551,9 +551,9 @@ public partial class OverlayWindow : Window
                 s.FadeOnSilenceEnabled,
                 s.SilenceFadeOutSeconds,
                 s.SilenceFadeInSeconds,
-                pitchReactiveColorEnabled: false,
+                pitchReactiveColorEnabled: s.PitchReactiveColorEnabled,
                 s.BassEmphasis, s.TrebleEmphasis,
-                beatShapeEnabled: false, s.GlowEnabled, s.PerfOverlayEnabled);
+                beatShapeEnabled: s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
 
             await _settings.SaveAsync(updated);
             QuickSettingsPanel.Visibility = Visibility.Collapsed;

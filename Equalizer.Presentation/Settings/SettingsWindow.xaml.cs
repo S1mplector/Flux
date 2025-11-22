@@ -209,9 +209,9 @@ public partial class SettingsWindow : Window
                 visualizerMode, circleDiameter,
                 current.OverlayVisible, fadeOnSilence,
                 fadeOutSeconds, fadeInSeconds,
-                pitchReactiveColorEnabled: false,
+                pitchReactiveColorEnabled: current.PitchReactiveColorEnabled,
                 bassEmphasis, trebleEmphasis,
-                beatShapeEnabled: false, glowEnabled: glow, perfOverlayEnabled: current.PerfOverlayEnabled);
+                beatShapeEnabled: current.BeatShapeEnabled, glowEnabled: glow, perfOverlayEnabled: current.PerfOverlayEnabled);
             await _settings.SaveAsync(s);
 
             // Immediately reflect changes in overlays

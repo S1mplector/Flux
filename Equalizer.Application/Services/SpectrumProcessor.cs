@@ -58,7 +58,8 @@ public sealed class SpectrumProcessor
                 var c = complex[i];
                 mag[i] = (2.0 / n) * c.Magnitude;
             }
-            return mag;
+            // Return a copy to keep the shared buffer thread-safe for concurrent callers.
+            return mag.ToArray();
         }
     }
 
@@ -100,31 +101,34 @@ public sealed class SpectrumProcessor
 
     private BinCache GetOrBuildBins(int bars, int sampleRate, int magLength, double fMin, double fMax, double nyquist)
     {
-        var key = new BinCacheKey(bars, sampleRate, magLength);
-        var cache = _binCache;
-        if (cache.HasValue && cache.Value.Key.Equals(key))
+        lock (_lock)
         {
-            return cache.Value;
+            var key = new BinCacheKey(bars, sampleRate, magLength);
+            var cache = _binCache;
+            if (cache.HasValue && cache.Value.Key.Equals(key))
+            {
+                return cache.Value;
+            }
+
+            var starts = new int[bars];
+            var ends = new int[bars];
+            for (int b = 0; b < bars; b++)
+            {
+                double t1 = (double)b / bars;
+                double t2 = (double)(b + 1) / bars;
+                double f1 = fMin * Math.Pow(fMax / fMin, t1);
+                double f2 = fMin * Math.Pow(fMax / fMin, t2);
+
+                int i1 = (int)Math.Clamp(Math.Round(f1 / nyquist * (magLength - 1)), 1, magLength - 1);
+                int i2 = (int)Math.Clamp(Math.Round(f2 / nyquist * (magLength - 1)), i1 + 1, magLength - 1);
+                starts[b] = i1;
+                ends[b] = i2;
+            }
+
+            var built = new BinCache(key, starts, ends);
+            _binCache = built;
+            return built;
         }
-
-        var starts = new int[bars];
-        var ends = new int[bars];
-        for (int b = 0; b < bars; b++)
-        {
-            double t1 = (double)b / bars;
-            double t2 = (double)(b + 1) / bars;
-            double f1 = fMin * Math.Pow(fMax / fMin, t1);
-            double f2 = fMin * Math.Pow(fMax / fMin, t2);
-
-            int i1 = (int)Math.Clamp(Math.Round(f1 / nyquist * (magLength - 1)), 1, magLength - 1);
-            int i2 = (int)Math.Clamp(Math.Round(f2 / nyquist * (magLength - 1)), i1 + 1, magLength - 1);
-            starts[b] = i1;
-            ends[b] = i2;
-        }
-
-        var built = new BinCache(key, starts, ends);
-        _binCache = built;
-        return built;
     }
 
     private readonly struct BinCacheKey : IEquatable<BinCacheKey>
