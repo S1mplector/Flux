@@ -109,7 +109,9 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
             s.VisualizerMode, s.CircleDiameter,
             s.OverlayVisible, s.FadeOnSilenceEnabled,
             s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds,
-            s.PitchReactiveColorEnabled);
+            s.PitchReactiveColorEnabled,
+            s.BassEmphasis, s.TrebleEmphasis,
+            s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
         await _settings.SaveAsync(updated);
 
         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -134,7 +136,12 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
             fadeOnSilenceEnabled: s.FadeOnSilenceEnabled,
             silenceFadeOutSeconds: s.SilenceFadeOutSeconds,
             silenceFadeInSeconds: s.SilenceFadeInSeconds,
-            pitchReactiveColorEnabled: s.PitchReactiveColorEnabled);
+            pitchReactiveColorEnabled: s.PitchReactiveColorEnabled,
+            bassEmphasis: s.BassEmphasis,
+            trebleEmphasis: s.TrebleEmphasis,
+            beatShapeEnabled: s.BeatShapeEnabled,
+            glowEnabled: s.GlowEnabled,
+            perfOverlayEnabled: s.PerfOverlayEnabled);
         await _settings.SaveAsync(updated);
     }
 

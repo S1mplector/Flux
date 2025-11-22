@@ -121,6 +121,42 @@ public sealed class EqualizerService : IEqualizerService
             rawBars = _processor.ComputeBarsFromMagnitudes(mag, audioFrame.SampleRate, settings.BarsCount);
         }
 
+        // Apply user-controlled per-band emphasis (bass/treble) to the bar data.
+        if (!isSilent && rawBars.Length > 0)
+        {
+            double bassEmphasis = Math.Clamp(settings.BassEmphasis, 0.0, 2.0);
+            double trebleEmphasis = Math.Clamp(settings.TrebleEmphasis, 0.0, 2.0);
+
+            if (Math.Abs(bassEmphasis - 1.0) > 1e-3 || Math.Abs(trebleEmphasis - 1.0) > 1e-3)
+            {
+                int n = rawBars.Length;
+                double bassRegion = 0.45;   // lower ~45% of bars
+                double trebleRegion = 0.45; // upper ~45% of bars
+
+                for (int i = 0; i < n; i++)
+                {
+                    double t = n > 1 ? (double)i / (n - 1) : 0.0; // 0=lowest freq bar, 1=highest
+
+                    double bassWeight = 1.0;
+                    if (bassRegion > 0 && t < bassRegion)
+                    {
+                        double alpha = 1.0 - t / bassRegion; // strongest at very low bars
+                        bassWeight = 1.0 + (bassEmphasis - 1.0) * alpha;
+                    }
+
+                    double trebleWeight = 1.0;
+                    if (trebleRegion > 0 && t > 1.0 - trebleRegion)
+                    {
+                        double alpha = (t - (1.0 - trebleRegion)) / trebleRegion; // strongest at very high bars
+                        trebleWeight = 1.0 + (trebleEmphasis - 1.0) * alpha;
+                    }
+
+                    double w = bassWeight * trebleWeight;
+                    rawBars[i] = (float)Math.Clamp(rawBars[i] * w, 0.0, 1.0);
+                }
+            }
+        }
+
         if (_previous == null || _previous.Length != rawBars.Length)
             _previous = new float[rawBars.Length];
 

@@ -34,6 +34,10 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -136,6 +140,22 @@
         <Slider x:Name="FadeInSlider" Grid.Row="22" Grid.Column="1" Minimum="0.1" Maximum="5" TickFrequency="0.1" Margin="0,8,0,0"/>
         <TextBox x:Name="FadeInValue" Grid.Row="22" Grid.Column="2" Margin="8,8,0,0"/>
 
+        <TextBlock Grid.Row="23" Grid.Column="0" Grid.ColumnSpan="3" Text="Dynamics &amp; effects" FontWeight="Bold" Margin="0,12,0,4"/>
+
+        <TextBlock Grid.Row="24" Grid.Column="0" Text="Bass emphasis" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <Slider x:Name="BassEmphasisSlider" Grid.Row="24" Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.1" Margin="0,8,0,0"/>
+        <TextBox x:Name="BassEmphasisValue" Grid.Row="24" Grid.Column="2" Margin="8,8,0,0"/>
+
+        <TextBlock Grid.Row="25" Grid.Column="0" Text="Treble emphasis" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <Slider x:Name="TrebleEmphasisSlider" Grid.Row="25" Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.1" Margin="0,8,0,0"/>
+        <TextBox x:Name="TrebleEmphasisValue" Grid.Row="25" Grid.Column="2" Margin="8,8,0,0"/>
+
+        <TextBlock Grid.Row="26" Grid.Column="0" Text="Beat/pitch shape" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <CheckBox x:Name="BeatShapeEnabledCheckBox" Grid.Row="26" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
+
+        <TextBlock Grid.Row="27" Grid.Column="0" Text="Glow effect" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <CheckBox x:Name="GlowEnabledCheckBox" Grid.Row="27" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
+
         </Grid>
         </ScrollViewer>
 
@@ -145,6 +165,9 @@
             </StatusBarItem>
             <StatusBarItem>
                 <TextBlock x:Name="MemoryUsageText" Text="RAM: -- MB" />
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock x:Name="FpsText" Text="FPS: --" Margin="16,0,0,0" />
             </StatusBarItem>
         </StatusBar>
 

@@ -21,6 +21,11 @@ public sealed class EqualizerSettings
     public double SilenceFadeOutSeconds { get; }
     public double SilenceFadeInSeconds { get; }
     public bool PitchReactiveColorEnabled { get; }
+    public double BassEmphasis { get; }
+    public double TrebleEmphasis { get; }
+    public bool BeatShapeEnabled { get; }
+    public bool GlowEnabled { get; }
+    public bool PerfOverlayEnabled { get; }
 
     public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color)
         : this(barsCount, responsiveness, smoothing, color,
@@ -137,6 +142,33 @@ public sealed class EqualizerSettings
         bool overlayVisible, bool fadeOnSilenceEnabled,
         double silenceFadeOutSeconds, double silenceFadeInSeconds,
         bool pitchReactiveColorEnabled)
+        : this(barsCount, responsiveness, smoothing, color,
+            targetFps, colorCycleEnabled, colorCycleSpeedHz, barCornerRadius,
+            displayMode, specificMonitorDeviceName,
+            offsetX, offsetY,
+            visualizerMode, circleDiameter,
+            overlayVisible, fadeOnSilenceEnabled,
+            silenceFadeOutSeconds, silenceFadeInSeconds,
+            pitchReactiveColorEnabled,
+            bassEmphasis: 1.0,
+            trebleEmphasis: 1.0,
+            beatShapeEnabled: false,
+            glowEnabled: false,
+            perfOverlayEnabled: false)
+    {
+    }
+
+    // Most complete constructor including fade-on-silence timings, pitch-reactive color, per-band emphasis and visual flags
+    public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color,
+        int targetFps, bool colorCycleEnabled, double colorCycleSpeedHz, double barCornerRadius,
+        MonitorDisplayMode displayMode, string? specificMonitorDeviceName,
+        double offsetX, double offsetY,
+        VisualizerMode visualizerMode, double circleDiameter,
+        bool overlayVisible, bool fadeOnSilenceEnabled,
+        double silenceFadeOutSeconds, double silenceFadeInSeconds,
+        bool pitchReactiveColorEnabled,
+        double bassEmphasis, double trebleEmphasis,
+        bool beatShapeEnabled, bool glowEnabled, bool perfOverlayEnabled)
     {
         if (barsCount < 8 || barsCount > 256)
             throw new ArgumentOutOfRangeException(nameof(barsCount), "BarsCount must be between 8 and 256.");
@@ -156,6 +188,10 @@ public sealed class EqualizerSettings
             throw new ArgumentOutOfRangeException(nameof(silenceFadeOutSeconds), "SilenceFadeOutSeconds must be between 0.05 and 10 seconds.");
         if (silenceFadeInSeconds < 0.05 || silenceFadeInSeconds > 10)
             throw new ArgumentOutOfRangeException(nameof(silenceFadeInSeconds), "SilenceFadeInSeconds must be between 0.05 and 10 seconds.");
+        if (bassEmphasis < 0 || bassEmphasis > 2)
+            throw new ArgumentOutOfRangeException(nameof(bassEmphasis), "BassEmphasis must be between 0 and 2.");
+        if (trebleEmphasis < 0 || trebleEmphasis > 2)
+            throw new ArgumentOutOfRangeException(nameof(trebleEmphasis), "TrebleEmphasis must be between 0 and 2.");
 
         BarsCount = barsCount;
         Responsiveness = responsiveness;
@@ -176,6 +212,11 @@ public sealed class EqualizerSettings
         SilenceFadeOutSeconds = silenceFadeOutSeconds;
         SilenceFadeInSeconds = silenceFadeInSeconds;
         PitchReactiveColorEnabled = pitchReactiveColorEnabled;
+        BassEmphasis = bassEmphasis;
+        TrebleEmphasis = trebleEmphasis;
+        BeatShapeEnabled = beatShapeEnabled;
+        GlowEnabled = glowEnabled;
+        PerfOverlayEnabled = perfOverlayEnabled;
     }
 
     public static EqualizerSettings Default => new(
@@ -197,6 +238,11 @@ public sealed class EqualizerSettings
         fadeOnSilenceEnabled: false,
         silenceFadeOutSeconds: 0.5,
         silenceFadeInSeconds: 0.2,
-        pitchReactiveColorEnabled: false
+        pitchReactiveColorEnabled: false,
+        bassEmphasis: 1.0,
+        trebleEmphasis: 1.0,
+        beatShapeEnabled: false,
+        glowEnabled: false,
+        perfOverlayEnabled: false
     );
 }

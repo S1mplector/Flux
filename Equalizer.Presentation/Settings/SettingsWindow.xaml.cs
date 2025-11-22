@@ -37,6 +37,8 @@ public partial class SettingsWindow : Window
         FpsSlider.ValueChanged += (_, __) => FpsValue.Text = ((int)FpsSlider.Value).ToString();
         ColorCycleSpeed.ValueChanged += (_, __) => ColorCycleSpeedValue.Text = ColorCycleSpeed.Value.ToString("0.00");
         CornerRadiusSlider.ValueChanged += (_, __) => CornerRadiusValue.Text = CornerRadiusSlider.Value.ToString("0.0");
+        BassEmphasisSlider.ValueChanged += (_, __) => BassEmphasisValue.Text = BassEmphasisSlider.Value.ToString("0.00");
+        TrebleEmphasisSlider.ValueChanged += (_, __) => TrebleEmphasisValue.Text = TrebleEmphasisSlider.Value.ToString("0.00");
         DisplayModeCombo.SelectionChanged += OnDisplayModeChanged;
         PickColorButton.Click += OnPickColor;
         ProfileCombo.SelectionChanged += OnProfileChanged;
@@ -80,6 +82,9 @@ public partial class SettingsWindow : Window
 
             CpuUsageText.Text = $"CPU: {cpuPercent:0.0}%";
             MemoryUsageText.Text = $"RAM: {memMb:0.0} MB";
+
+            // Show configured target FPS for quick reference
+            FpsText.Text = $"FPS: {(int)FpsSlider.Value}";
         }
         catch
         {
@@ -155,6 +160,14 @@ public partial class SettingsWindow : Window
         FadeInSlider.Value = s.SilenceFadeInSeconds;
         FadeInValue.Text = s.SilenceFadeInSeconds.ToString("0.00");
 
+        BassEmphasisSlider.Value = s.BassEmphasis;
+        BassEmphasisValue.Text = s.BassEmphasis.ToString("0.00");
+        TrebleEmphasisSlider.Value = s.TrebleEmphasis;
+        TrebleEmphasisValue.Text = s.TrebleEmphasis.ToString("0.00");
+
+        BeatShapeEnabledCheckBox.IsChecked = s.BeatShapeEnabled;
+        GlowEnabledCheckBox.IsChecked = s.GlowEnabled;
+
         // Performance profile (infer from current values)
         SetProfileFromCurrentValues();
     }
@@ -183,6 +196,10 @@ public partial class SettingsWindow : Window
             bool fadeOnSilence = FadeOnSilenceEnabledCheckBox.IsChecked == true;
             double fadeOutSeconds = FadeOutSlider.Value;
             double fadeInSeconds = FadeInSlider.Value;
+            double bassEmphasis = BassEmphasisSlider.Value;
+            double trebleEmphasis = TrebleEmphasisSlider.Value;
+            bool beatShape = BeatShapeEnabledCheckBox.IsChecked == true;
+            bool glow = GlowEnabledCheckBox.IsChecked == true;
             string? deviceName = null;
             if (displayMode == MonitorDisplayMode.Specific && MonitorCombo.SelectedItem is ComboBoxItem sel)
                 deviceName = sel.Tag as string;
@@ -196,7 +213,9 @@ public partial class SettingsWindow : Window
                 visualizerMode, circleDiameter,
                 current.OverlayVisible, fadeOnSilence,
                 fadeOutSeconds, fadeInSeconds,
-                pitchReactive);
+                pitchReactive,
+                bassEmphasis, trebleEmphasis,
+                beatShape, glow, current.PerfOverlayEnabled);
             await _settings.SaveAsync(s);
 
             // Immediately reflect changes in overlays

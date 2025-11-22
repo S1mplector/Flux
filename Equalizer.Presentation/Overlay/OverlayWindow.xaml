@@ -9,6 +9,7 @@
         AllowsTransparency="True">
     <Grid>
         <Canvas x:Name="BarsCanvas" Background="Transparent"/>
+        <TextBlock x:Name="PerfText" Foreground="White" FontSize="11" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Bottom" Opacity="0.8" Visibility="Collapsed"/>
         <Border x:Name="ConfirmPanel" Background="#DD000000" CornerRadius="6" Padding="10" Width="260" Height="80" Visibility="Collapsed"
                 HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0">
             <StackPanel>

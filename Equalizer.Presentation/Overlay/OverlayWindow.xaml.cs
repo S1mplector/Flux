@@ -19,6 +19,7 @@ public partial class OverlayWindow : Window
     private readonly ISettingsPort _settings;
     private readonly List<System.Windows.Shapes.Rectangle> _bars = new();
     private readonly List<System.Windows.Shapes.Rectangle> _peakBars = new();
+    private readonly List<System.Windows.Shapes.Rectangle> _glowBars = new();
     private readonly CancellationTokenSource _cts = new();
     private bool _rendering;
     private SolidColorBrush _barBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 255, 128));
@@ -83,12 +84,15 @@ public partial class OverlayWindow : Window
 
             var now = DateTime.UtcNow;
             var minIntervalMs = 1000.0 / Math.Clamp(s.TargetFps, 10, 240);
+            double dt = 0.0;
             if (_lastFrame != DateTime.MinValue)
             {
-                var dt = (now - _lastFrame).TotalMilliseconds;
+                dt = (now - _lastFrame).TotalMilliseconds;
                 if (dt < minIntervalMs) return;
             }
             _lastFrame = now;
+
+            var frameStart = DateTime.UtcNow;
 
             if (_pendingFrameTask == null || _pendingFrameTask.IsCompleted)
             {
@@ -140,6 +144,19 @@ public partial class OverlayWindow : Window
                 EnsureBars(data.Length);
                 RenderLinearBars(vf, data, s, width, height, spacing);
             }
+
+            // Perf overlay text (optional)
+            if (s.PerfOverlayEnabled)
+            {
+                double fps = dt > 0.0 ? 1000.0 / dt : 0.0;
+                var procMs = (DateTime.UtcNow - frameStart).TotalMilliseconds;
+                PerfText.Visibility = Visibility.Visible;
+                PerfText.Text = $"FPS ~ {fps:0}    frame {procMs:0.0} ms";
+            }
+            else
+            {
+                PerfText.Visibility = Visibility.Collapsed;
+            }
         }
         finally
         {
@@ -156,15 +173,54 @@ public partial class OverlayWindow : Window
             // Slight bass/treble emphasis and stronger beat pulse scaling
             var scale = 1.0 + 0.12 * vf.Bass + 0.06 * vf.Treble + 0.18 * _beatPulse;
             var h = Math.Max(1.0, data[i] * height * scale * fade);
-            var left = i * (barWidth + spacing);
+            var t = data.Length > 1 ? (double)i / (data.Length - 1) : 0.0;
+
+            // Beat/pitch-driven width modulation (optional)
+            double widthScale = 1.0;
+            if (s.BeatShapeEnabled)
+            {
+                double regionWeight = 0.0;
+                if (vf.PitchStrength > 0.1f)
+                {
+                    double center = vf.PitchHue; // 0..1 across bars
+                    double region = 0.25;        // fraction of bars affected around the pitch
+                    double dist = Math.Abs(t - center);
+                    regionWeight = Math.Max(0.0, 1.0 - dist / region);
+                }
+
+                double beatFactor = _beatPulse; // 0..1
+                widthScale = 1.0 + 0.4 * beatFactor * (0.5 + 0.5 * regionWeight);
+            }
+
+            var w = barWidth * widthScale;
+            var left = i * (barWidth + spacing) + (barWidth - w) * 0.5;
             var top = height - h;
             var rect = _bars[i];
-            rect.Width = barWidth;
+            rect.Width = w;
             rect.Height = h;
             rect.RadiusX = s.BarCornerRadius;
             rect.RadiusY = s.BarCornerRadius;
             Canvas.SetLeft(rect, left);
             Canvas.SetTop(rect, top);
+
+            // Optional glow bar behind the main bar
+            if (_glowBars.Count == data.Length)
+            {
+                var glowRect = _glowBars[i];
+                if (s.GlowEnabled)
+                {
+                    glowRect.Opacity = 0.35;
+                    glowRect.Width = w * 1.15;
+                    var glowH = Math.Max(1.0, h * 1.25);
+                    glowRect.Height = glowH;
+                    Canvas.SetLeft(glowRect, left - (glowRect.Width - w) * 0.5);
+                    Canvas.SetTop(glowRect, Math.Max(0.0, height - glowH));
+                }
+                else
+                {
+                    glowRect.Opacity = 0.0;
+                }
+            }
 
             if (_peaks == null || _peaks.Length != data.Length) _peaks = new float[data.Length];
             var amp = (float)Math.Clamp(data[i] * scale * fade, 0.0, 1.0);
@@ -172,7 +228,7 @@ public partial class OverlayWindow : Window
             _peaks[i] = Math.Max(decayed, amp);
             var peakH = Math.Max(1.0, _peaks[i] * height * fade);
             var peakRect = _peakBars[i];
-            peakRect.Width = barWidth;
+            peakRect.Width = w;
             peakRect.Height = Math.Max(2.0, Math.Min(4.0, height * 0.01));
             Canvas.SetLeft(peakRect, left);
             Canvas.SetTop(peakRect, Math.Max(0.0, height - peakH - peakRect.Height));
@@ -217,6 +273,38 @@ public partial class OverlayWindow : Window
             var x2 = cx + cos * radius;
             var y2 = cy + sin * radius;
 
+            // Beat/pitch-driven thickness modulation (optional)
+            double localThickness = thickness;
+            if (s.BeatShapeEnabled)
+            {
+                double pos = (double)i / data.Length; // 0..1 around circle
+                double center = vf.PitchHue;
+                double region = 0.25;
+                double dist = Math.Abs(pos - center);
+                dist = Math.Min(dist, 1.0 - dist); // wrap around circle
+                double regionWeight = Math.Max(0.0, 1.0 - dist / region);
+                double beatFactor = _beatPulse;
+                localThickness = thickness * (1.0 + 0.5 * beatFactor * (0.5 + 0.5 * regionWeight));
+            }
+
+            // Optional glow: a thicker, low-opacity line behind the main bar
+            if (s.GlowEnabled)
+            {
+                var glowLine = new System.Windows.Shapes.Line
+                {
+                    X1 = x1,
+                    Y1 = y1,
+                    X2 = x2,
+                    Y2 = y2,
+                    Stroke = _barBrush,
+                    StrokeThickness = localThickness * 1.5,
+                    StrokeStartLineCap = PenLineCap.Round,
+                    StrokeEndLineCap = PenLineCap.Round,
+                    Opacity = 0.3
+                };
+                BarsCanvas.Children.Add(glowLine);
+            }
+
             var line = new System.Windows.Shapes.Line
             {
                 X1 = x1,
@@ -224,7 +312,7 @@ public partial class OverlayWindow : Window
                 X2 = x2,
                 Y2 = y2,
                 Stroke = _barBrush,
-                StrokeThickness = thickness,
+                StrokeThickness = localThickness,
                 StrokeStartLineCap = PenLineCap.Round,
                 StrokeEndLineCap = PenLineCap.Round
             };
@@ -238,10 +326,21 @@ public partial class OverlayWindow : Window
         BarsCanvas.Children.Clear();
         _bars.Clear();
         _peakBars.Clear();
+        _glowBars.Clear();
         _peaks = count > 0 ? new float[count] : null;
 
         for (int i = 0; i < count; i++)
         {
+            var glow = new System.Windows.Shapes.Rectangle
+            {
+                Fill = _barBrush,
+                RadiusX = 1,
+                RadiusY = 1,
+                Opacity = 0.0
+            };
+            _glowBars.Add(glow);
+            BarsCanvas.Children.Add(glow);
+
             var r = new System.Windows.Shapes.Rectangle
             {
                 Fill = _barBrush,
@@ -343,7 +442,9 @@ public partial class OverlayWindow : Window
             s.VisualizerMode, s.CircleDiameter,
             s.OverlayVisible, s.FadeOnSilenceEnabled,
             s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds,
-            s.PitchReactiveColorEnabled);
+            s.PitchReactiveColorEnabled,
+            s.BassEmphasis, s.TrebleEmphasis,
+            s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
         await _settings.SaveAsync(updated);
         ConfirmPanel.Visibility = Visibility.Collapsed;
     }
@@ -385,7 +486,9 @@ public partial class OverlayWindow : Window
                 s.FadeOnSilenceEnabled,
                 s.SilenceFadeOutSeconds,
                 s.SilenceFadeInSeconds,
-                s.PitchReactiveColorEnabled);
+                s.PitchReactiveColorEnabled,
+                s.BassEmphasis, s.TrebleEmphasis,
+                s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
 
             await _settings.SaveAsync(updated);
             QuickSettingsPanel.Visibility = Visibility.Collapsed;

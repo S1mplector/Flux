@@ -84,6 +84,11 @@ public sealed class JsonSettingsRepository : ISettingsPort
         public double SilenceFadeOutSeconds { get; set; } = 0.5;
         public double SilenceFadeInSeconds { get; set; } = 0.2;
         public bool PitchReactiveColorEnabled { get; set; } = false;
+        public double BassEmphasis { get; set; } = 1.0;
+        public double TrebleEmphasis { get; set; } = 1.0;
+        public bool BeatShapeEnabled { get; set; } = false;
+        public bool GlowEnabled { get; set; } = false;
+        public bool PerfOverlayEnabled { get; set; } = false;
 
         public EqualizerSettings ToDomain() => new EqualizerSettings(
             BarsCount, Responsiveness, Smoothing, new ColorRgb(ColorR, ColorG, ColorB),
@@ -92,7 +97,9 @@ public sealed class JsonSettingsRepository : ISettingsPort
             OffsetX, OffsetY,
             (VisualizerMode)VisualizerMode, CircleDiameter, OverlayVisible, FadeOnSilenceEnabled,
             SilenceFadeOutSeconds, SilenceFadeInSeconds,
-            PitchReactiveColorEnabled);
+            PitchReactiveColorEnabled,
+            BassEmphasis, TrebleEmphasis,
+            BeatShapeEnabled, GlowEnabled, PerfOverlayEnabled);
 
         public static SettingsDto FromDomain(EqualizerSettings s) => new SettingsDto
         {
@@ -116,7 +123,12 @@ public sealed class JsonSettingsRepository : ISettingsPort
             FadeOnSilenceEnabled = s.FadeOnSilenceEnabled,
             SilenceFadeOutSeconds = s.SilenceFadeOutSeconds,
             SilenceFadeInSeconds = s.SilenceFadeInSeconds,
-            PitchReactiveColorEnabled = s.PitchReactiveColorEnabled
+            PitchReactiveColorEnabled = s.PitchReactiveColorEnabled,
+            BassEmphasis = s.BassEmphasis,
+            TrebleEmphasis = s.TrebleEmphasis,
+            BeatShapeEnabled = s.BeatShapeEnabled,
+            GlowEnabled = s.GlowEnabled,
+            PerfOverlayEnabled = s.PerfOverlayEnabled
         };
     }
 }
