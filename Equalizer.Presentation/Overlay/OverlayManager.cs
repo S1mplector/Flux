@@ -21,6 +21,7 @@ public sealed class OverlayManager : IOverlayManager
     public bool IsVisible => _window.Dispatcher.CheckAccess() ? _window.IsVisible : _window.Dispatcher.Invoke(() => _window.IsVisible);
     public bool ClickThrough => _clickThrough;
     public bool AlwaysOnTop => _alwaysOnTop;
+    public double? GetCurrentFps() => null;
 
     public Task ShowAsync()
     {

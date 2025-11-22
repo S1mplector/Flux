@@ -29,6 +29,26 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
     public bool IsVisible => _isVisible;
     public bool ClickThrough => _clickThrough;
     public bool AlwaysOnTop => _alwaysOnTop;
+    public double? GetCurrentFps()
+    {
+        if (System.Windows.Application.Current.Dispatcher.CheckAccess())
+        {
+            return SampleFps();
+        }
+
+        return System.Windows.Application.Current.Dispatcher.Invoke<double?>(SampleFps);
+    }
+
+    private double? SampleFps()
+    {
+        var now = DateTime.UtcNow;
+        var samples = _windows.Values
+            .Where(w => w.IsVisible && now - w.LastFpsSampleAt <= TimeSpan.FromSeconds(2) && w.LastMeasuredFps > 0)
+            .Select(w => w.LastMeasuredFps)
+            .ToList();
+        if (samples.Count == 0) return null;
+        return samples.Average();
+    }
 
     public async Task ShowAsync()
     {

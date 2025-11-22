@@ -34,7 +34,11 @@ public partial class SettingsWindow : Window
         ColorR.ValueChanged += (_, __) => ColorRValue.Text = ((int)ColorR.Value).ToString();
         ColorG.ValueChanged += (_, __) => ColorGValue.Text = ((int)ColorG.Value).ToString();
         ColorB.ValueChanged += (_, __) => ColorBValue.Text = ((int)ColorB.Value).ToString();
-        FpsSlider.ValueChanged += (_, __) => FpsValue.Text = ((int)FpsSlider.Value).ToString();
+        FpsSlider.ValueChanged += (_, __) =>
+        {
+            var fps = (int)FpsSlider.Value;
+            FpsValue.Text = fps.ToString();
+        };
         ColorCycleSpeed.ValueChanged += (_, __) => ColorCycleSpeedValue.Text = ColorCycleSpeed.Value.ToString("0.00");
         CornerRadiusSlider.ValueChanged += (_, __) => CornerRadiusValue.Text = CornerRadiusSlider.Value.ToString("0.0");
         BassEmphasisSlider.ValueChanged += (_, __) => BassEmphasisValue.Text = BassEmphasisSlider.Value.ToString("0.00");
@@ -83,8 +87,16 @@ public partial class SettingsWindow : Window
             CpuUsageText.Text = $"CPU: {cpuPercent:0.0}%";
             MemoryUsageText.Text = $"RAM: {memMb:0.0} MB";
 
-            // Show configured target FPS for quick reference
-            FpsText.Text = $"FPS: {(int)FpsSlider.Value}";
+            var overlayFps = _overlay.GetCurrentFps();
+            if (overlayFps.HasValue)
+            {
+                FpsText.Text = $"FPS: {overlayFps.Value:0}";
+            }
+            else
+            {
+                // Fall back to target FPS when overlay isn't rendering
+                FpsText.Text = $"FPS: {(int)FpsSlider.Value} (target)";
+            }
         }
         catch
         {
@@ -110,6 +122,7 @@ public partial class SettingsWindow : Window
 
         FpsSlider.Value = s.TargetFps;
         FpsValue.Text = s.TargetFps.ToString();
+        FpsText.Text = $"FPS: {s.TargetFps} (target)";
         ColorCycleEnabled.IsChecked = s.ColorCycleEnabled;
         ColorCycleSpeed.Value = s.ColorCycleSpeedHz;
         ColorCycleSpeedValue.Text = s.ColorCycleSpeedHz.ToString("0.00");

@@ -10,6 +10,10 @@ public interface IOverlayManager
     bool IsVisible { get; }
     bool ClickThrough { get; }
     bool AlwaysOnTop { get; }
+    /// <summary>
+    /// Returns the most recent measured overlay FPS if available (across any visible overlays).
+    /// </summary>
+    double? GetCurrentFps();
     Task SetClickThroughAsync(bool value);
     Task ToggleClickThroughAsync();
     Task SetAlwaysOnTopAsync(bool value);

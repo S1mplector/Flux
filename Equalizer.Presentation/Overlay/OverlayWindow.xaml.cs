@@ -43,6 +43,8 @@ public partial class OverlayWindow : Window
     private EqualizerSettings? _settingsSnapshot;
     private DateTime _settingsSnapshotAt;
     private Task<EqualizerSettings>? _settingsFetchTask;
+    private double _lastMeasuredFps;
+    private DateTime _lastFpsSampleAt = DateTime.MinValue;
 
     public OverlayWindow(IEqualizerService service, ISettingsPort settings)
     {
@@ -101,6 +103,14 @@ public partial class OverlayWindow : Window
                 if (dt < minIntervalMs) return;
             }
             _lastFrame = now;
+
+            if (dt > 0.0)
+            {
+                var fpsInstant = 1000.0 / dt;
+                const double alpha = 0.2; // light smoothing to avoid jitter
+                _lastMeasuredFps = _lastMeasuredFps > 0 ? _lastMeasuredFps * (1 - alpha) + fpsInstant * alpha : fpsInstant;
+                _lastFpsSampleAt = DateTime.UtcNow;
+            }
 
             var frameStart = DateTime.UtcNow;
 
@@ -171,7 +181,7 @@ public partial class OverlayWindow : Window
             // Perf overlay text (optional)
             if (s.PerfOverlayEnabled)
             {
-                double fps = dt > 0.0 ? 1000.0 / dt : 0.0;
+                double fps = _lastMeasuredFps;
                 var procMs = (DateTime.UtcNow - frameStart).TotalMilliseconds;
                 PerfText.Visibility = Visibility.Visible;
                 PerfText.Text = $"FPS ~ {fps:0}    frame {procMs:0.0} ms";
@@ -678,4 +688,7 @@ public partial class OverlayWindow : Window
         }
         return s;
     }
+
+    public double LastMeasuredFps => _lastMeasuredFps;
+    public DateTime LastFpsSampleAt => _lastFpsSampleAt;
 }
