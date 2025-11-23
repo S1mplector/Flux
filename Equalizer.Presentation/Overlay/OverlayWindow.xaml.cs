@@ -326,11 +326,11 @@ public partial class OverlayWindow : Window
             if (s.GlowEnabled)
             {
                 dc.PushOpacity(0.3);
-                dc.DrawLine(new Pen(_barBrush, localThickness * 1.5) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, new System.Windows.Point(x1, y1), new System.Windows.Point(x2, y2));
+                dc.DrawLine(new System.Windows.Media.Pen(_barBrush, localThickness * 1.5) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, new System.Windows.Point(x1, y1), new System.Windows.Point(x2, y2));
                 dc.Pop();
             }
 
-            dc.DrawLine(new Pen(_barBrush, localThickness) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, new System.Windows.Point(x1, y1), new System.Windows.Point(x2, y2));
+            dc.DrawLine(new System.Windows.Media.Pen(_barBrush, localThickness) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, new System.Windows.Point(x1, y1), new System.Windows.Point(x2, y2));
         }
     }
 
