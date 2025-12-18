@@ -77,78 +77,112 @@
 
         <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3" Text="Performance" FontWeight="Bold" Margin="0,12,0,4"/>
 
-        <TextBlock Grid.Row="8" Grid.Column="0" Text="Target FPS" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <Slider x:Name="FpsSlider" Grid.Row="8" Grid.Column="1" Minimum="10" Maximum="240" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,8,0,0"/>
-        <TextBox x:Name="FpsValue" Grid.Row="8" Grid.Column="2" Margin="8,8,0,0"/>
+        <TextBlock Grid.Row="8" Grid.Column="0" Text="Rendering" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <ComboBox x:Name="RenderingModeCombo" Grid.Row="8" Grid.Column="1" Margin="0,8,0,0">
+            <ComboBoxItem Content="CPU (WPF)" Tag="0" />
+            <ComboBoxItem Content="GPU (SkiaSharp)" Tag="1" />
+        </ComboBox>
 
-        <TextBlock Grid.Row="9" Grid.Column="0" Text="Cycle color" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <CheckBox x:Name="ColorCycleEnabled" Grid.Row="9" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
+        <TextBlock Grid.Row="9" Grid.Column="0" Text="Target FPS" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <Slider x:Name="FpsSlider" Grid.Row="9" Grid.Column="1" Minimum="10" Maximum="240" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,8,0,0"/>
+        <TextBox x:Name="FpsValue" Grid.Row="9" Grid.Column="2" Margin="8,8,0,0"/>
 
-        <TextBlock Grid.Row="10" Grid.Column="0" Text="Cycle speed (Hz)" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <Slider x:Name="ColorCycleSpeed" Grid.Row="10" Grid.Column="1" Minimum="0" Maximum="5" TickFrequency="0.1" Margin="0,8,0,0"/>
-        <TextBox x:Name="ColorCycleSpeedValue" Grid.Row="10" Grid.Column="2" Margin="8,8,0,0"/>
+        <TextBlock Grid.Row="10" Grid.Column="0" Text="Cycle color" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <CheckBox x:Name="ColorCycleEnabled" Grid.Row="10" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
 
-        <TextBlock Grid.Row="11" Grid.Column="0" Text="Bar corner radius" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <Slider x:Name="CornerRadiusSlider" Grid.Row="11" Grid.Column="1" Minimum="0" Maximum="16" TickFrequency="1" Margin="0,8,0,0"/>
-        <TextBox x:Name="CornerRadiusValue" Grid.Row="11" Grid.Column="2" Margin="8,8,0,0"/>
+        <TextBlock Grid.Row="11" Grid.Column="0" Text="Cycle speed (Hz)" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <Slider x:Name="ColorCycleSpeed" Grid.Row="11" Grid.Column="1" Minimum="0" Maximum="5" TickFrequency="0.1" Margin="0,8,0,0"/>
+        <TextBox x:Name="ColorCycleSpeedValue" Grid.Row="11" Grid.Column="2" Margin="8,8,0,0"/>
 
-        <TextBlock Grid.Row="12" Grid.Column="0" Grid.ColumnSpan="3" Text="Display" FontWeight="Bold" Margin="0,12,0,4"/>
+        <TextBlock Grid.Row="12" Grid.Column="0" Text="Bar corner radius" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <Slider x:Name="CornerRadiusSlider" Grid.Row="12" Grid.Column="1" Minimum="0" Maximum="16" TickFrequency="1" Margin="0,8,0,0"/>
+        <TextBox x:Name="CornerRadiusValue" Grid.Row="12" Grid.Column="2" Margin="8,8,0,0"/>
 
-        <TextBlock Grid.Row="13" Grid.Column="0" Text="Display on" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <ComboBox x:Name="DisplayModeCombo" Grid.Row="13" Grid.Column="1" Margin="0,8,0,0">
+        <TextBlock Grid.Row="13" Grid.Column="0" Grid.ColumnSpan="3" Text="Display" FontWeight="Bold" Margin="0,12,0,4"/>
+
+        <TextBlock Grid.Row="14" Grid.Column="0" Text="Display on" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <ComboBox x:Name="DisplayModeCombo" Grid.Row="14" Grid.Column="1" Margin="0,8,0,0">
             <ComboBoxItem Content="All monitors" Tag="0" />
             <ComboBoxItem Content="Primary monitor only" Tag="1" />
             <ComboBoxItem Content="Specific monitor" Tag="2" />
         </ComboBox>
+        <Button x:Name="RefreshMonitorsButton" Grid.Row="14" Grid.Column="2" Content="⟳" ToolTip="Refresh monitors" Margin="8,8,0,0" Click="RefreshMonitorsButton_Click"/>
 
-        <TextBlock Grid.Row="14" Grid.Column="0" Text="Monitor" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <ComboBox x:Name="MonitorCombo" Grid.Row="14" Grid.Column="1" Margin="0,8,0,0" IsEnabled="False"/>
+        <TextBlock Grid.Row="15" Grid.Column="0" Text="Monitor" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <ComboBox x:Name="MonitorCombo" Grid.Row="15" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,8,0,0" IsEnabled="False"/>
 
-        <TextBlock Grid.Row="15" Grid.Column="0" Grid.ColumnSpan="3" Text="Visualizer" FontWeight="Bold" Margin="0,12,0,4"/>
+        <TextBlock Grid.Row="16" Grid.Column="0" Grid.ColumnSpan="3" Text="Visualizer" FontWeight="Bold" Margin="0,12,0,4"/>
 
-        <TextBlock Grid.Row="16" Grid.Column="0" Text="Visualizer mode" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <ComboBox x:Name="VisualizerModeCombo" Grid.Row="16" Grid.Column="1" Margin="0,8,0,0">
+        <TextBlock Grid.Row="17" Grid.Column="0" Text="Visualizer mode" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <ComboBox x:Name="VisualizerModeCombo" Grid.Row="17" Grid.Column="1" Margin="0,8,0,0">
             <ComboBoxItem Content="Bars" Tag="0" />
             <ComboBoxItem Content="Circular" Tag="1" />
         </ComboBox>
 
-        <TextBlock Grid.Row="17" Grid.Column="0" Text="Circle diameter" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <Slider x:Name="CircleDiameterSlider" Grid.Row="17" Grid.Column="1" Minimum="100" Maximum="2000" TickFrequency="50" Margin="0,8,0,0"/>
-        <TextBox x:Name="CircleDiameterValue" Grid.Row="17" Grid.Column="2" Margin="8,8,0,0"/>
+        <TextBlock Grid.Row="18" Grid.Column="0" Text="Circle diameter" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <Slider x:Name="CircleDiameterSlider" Grid.Row="18" Grid.Column="1" Minimum="100" Maximum="2000" TickFrequency="50" Margin="0,8,0,0"/>
+        <TextBox x:Name="CircleDiameterValue" Grid.Row="18" Grid.Column="2" Margin="8,8,0,0"/>
 
-        <TextBlock Grid.Row="18" Grid.Column="0" Grid.ColumnSpan="3" Text="Silence &amp; fading" FontWeight="Bold" Margin="0,12,0,4"/>
+        <TextBlock Grid.Row="19" Grid.Column="0" Grid.ColumnSpan="3" Text="Silence &amp; fading" FontWeight="Bold" Margin="0,12,0,4"/>
 
-        <TextBlock Grid.Row="19" Grid.Column="0" Text="Performance profile" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <ComboBox x:Name="ProfileCombo" Grid.Row="19" Grid.Column="1" Margin="0,8,0,0">
+        <TextBlock Grid.Row="20" Grid.Column="0" Text="Performance profile" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <ComboBox x:Name="ProfileCombo" Grid.Row="20" Grid.Column="1" Margin="0,8,0,0">
             <ComboBoxItem Content="Custom" Tag="custom" />
             <ComboBoxItem Content="Smooth" Tag="smooth" />
             <ComboBoxItem Content="Balanced" Tag="balanced" />
             <ComboBoxItem Content="Low latency" Tag="low" />
         </ComboBox>
 
-        <TextBlock Grid.Row="20" Grid.Column="0" Text="Fade on silence" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <CheckBox x:Name="FadeOnSilenceEnabledCheckBox" Grid.Row="20" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
+        <TextBlock Grid.Row="21" Grid.Column="0" Text="Fade on silence" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <CheckBox x:Name="FadeOnSilenceEnabledCheckBox" Grid.Row="21" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
 
-        <TextBlock Grid.Row="21" Grid.Column="0" Text="Fade-out time (s)" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <Slider x:Name="FadeOutSlider" Grid.Row="21" Grid.Column="1" Minimum="0.1" Maximum="5" TickFrequency="0.1" Margin="0,8,0,0"/>
-        <TextBox x:Name="FadeOutValue" Grid.Row="21" Grid.Column="2" Margin="8,8,0,0"/>
+        <TextBlock Grid.Row="22" Grid.Column="0" Text="Fade-out time (s)" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <Slider x:Name="FadeOutSlider" Grid.Row="22" Grid.Column="1" Minimum="0.1" Maximum="5" TickFrequency="0.1" Margin="0,8,0,0"/>
+        <TextBox x:Name="FadeOutValue" Grid.Row="22" Grid.Column="2" Margin="8,8,0,0"/>
 
-        <TextBlock Grid.Row="22" Grid.Column="0" Text="Fade-in time (s)" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <Slider x:Name="FadeInSlider" Grid.Row="22" Grid.Column="1" Minimum="0.1" Maximum="5" TickFrequency="0.1" Margin="0,8,0,0"/>
-        <TextBox x:Name="FadeInValue" Grid.Row="22" Grid.Column="2" Margin="8,8,0,0"/>
+        <TextBlock Grid.Row="23" Grid.Column="0" Text="Fade-in time (s)" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <Slider x:Name="FadeInSlider" Grid.Row="23" Grid.Column="1" Minimum="0.1" Maximum="5" TickFrequency="0.1" Margin="0,8,0,0"/>
+        <TextBox x:Name="FadeInValue" Grid.Row="23" Grid.Column="2" Margin="8,8,0,0"/>
 
-        <TextBlock Grid.Row="23" Grid.Column="0" Grid.ColumnSpan="3" Text="Dynamics &amp; effects" FontWeight="Bold" Margin="0,12,0,4"/>
+        <TextBlock Grid.Row="24" Grid.Column="0" Grid.ColumnSpan="3" Text="Dynamics &amp; effects" FontWeight="Bold" Margin="0,12,0,4"/>
 
-        <TextBlock Grid.Row="24" Grid.Column="0" Text="Bass emphasis" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <Slider x:Name="BassEmphasisSlider" Grid.Row="24" Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.1" Margin="0,8,0,0"/>
-        <TextBox x:Name="BassEmphasisValue" Grid.Row="24" Grid.Column="2" Margin="8,8,0,0"/>
+        <TextBlock Grid.Row="25" Grid.Column="0" Text="Bass emphasis" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <Slider x:Name="BassEmphasisSlider" Grid.Row="25" Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.1" Margin="0,8,0,0"/>
+        <TextBox x:Name="BassEmphasisValue" Grid.Row="25" Grid.Column="2" Margin="8,8,0,0"/>
 
-        <TextBlock Grid.Row="25" Grid.Column="0" Text="Treble emphasis" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <Slider x:Name="TrebleEmphasisSlider" Grid.Row="25" Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.1" Margin="0,8,0,0"/>
-        <TextBox x:Name="TrebleEmphasisValue" Grid.Row="25" Grid.Column="2" Margin="8,8,0,0"/>
+        <TextBlock Grid.Row="26" Grid.Column="0" Text="Treble emphasis" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <Slider x:Name="TrebleEmphasisSlider" Grid.Row="26" Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.1" Margin="0,8,0,0"/>
+        <TextBox x:Name="TrebleEmphasisValue" Grid.Row="26" Grid.Column="2" Margin="8,8,0,0"/>
 
-        <TextBlock Grid.Row="26" Grid.Column="0" Text="Glow effect" VerticalAlignment="Center" Margin="0,8,8,0"/>
-        <CheckBox x:Name="GlowEnabledCheckBox" Grid.Row="26" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
+        <TextBlock Grid.Row="27" Grid.Column="0" Text="Glow effect" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <CheckBox x:Name="GlowEnabledCheckBox" Grid.Row="27" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable"/>
+
+        <TextBlock Grid.Row="28" Grid.Column="0" Text="Beat shape" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <CheckBox x:Name="BeatShapeEnabledCheckBox" Grid.Row="28" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable pulse on beats"/>
+
+        <TextBlock Grid.Row="29" Grid.Column="0" Text="Gradient" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <CheckBox x:Name="GradientEnabledCheckBox" Grid.Row="29" Grid.Column="1" VerticalAlignment="Center" Margin="0,8,0,0" Content="Enable bass-to-treble gradient"/>
+
+        <TextBlock Grid.Row="30" Grid.Column="0" Text="Gradient end color" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <StackPanel Grid.Row="30" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0">
+            <Slider x:Name="GradientEndR" Minimum="0" Maximum="255" Width="80"/>
+            <Slider x:Name="GradientEndG" Minimum="0" Maximum="255" Width="80" Margin="4,0,0,0"/>
+            <Slider x:Name="GradientEndB" Minimum="0" Maximum="255" Width="80" Margin="4,0,0,0"/>
+        </StackPanel>
+        <StackPanel Grid.Row="30" Grid.Column="2" Orientation="Horizontal" Margin="8,8,0,0">
+            <Border x:Name="GradientPreview" Width="50" Height="20" BorderBrush="Gray" BorderThickness="1"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="31" Grid.Column="0" Grid.ColumnSpan="3" Text="Theme presets" FontWeight="Bold" Margin="0,12,0,4"/>
+
+        <TextBlock Grid.Row="32" Grid.Column="0" Text="Preset" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <ComboBox x:Name="ThemePresetCombo" Grid.Row="32" Grid.Column="1" Margin="0,8,0,0" SelectionChanged="ThemePresetCombo_SelectionChanged"/>
+        <Button x:Name="ApplyPresetButton" Grid.Row="32" Grid.Column="2" Content="Apply" Margin="8,8,0,0" Click="ApplyPresetButton_Click"/>
+
+        <TextBlock Grid.Row="33" Grid.Column="0" Grid.ColumnSpan="3" Text="Audio" FontWeight="Bold" Margin="0,12,0,4"/>
+
+        <TextBlock Grid.Row="34" Grid.Column="0" Text="Output device" VerticalAlignment="Center" Margin="0,8,8,0"/>
+        <ComboBox x:Name="AudioDeviceCombo" Grid.Row="34" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,8,0,0"/>
 
         </Grid>
         </ScrollViewer>
@@ -165,6 +199,9 @@
             </StatusBarItem>
             <StatusBarItem>
                 <TextBlock x:Name="FpsText" Text="FPS: --" Margin="16,0,0,0" />
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock x:Name="LatencyText" Text="Latency: -- ms" Margin="16,0,0,0" Foreground="#FF8800" />
             </StatusBarItem>
         </StatusBar>
 

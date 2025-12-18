@@ -8,6 +8,9 @@ using Equalizer.Application.Abstractions;
 using Equalizer.Application.Models;
 using Equalizer.Domain;
 using Equalizer.Presentation.Controls;
+using Equalizer.Presentation.Widgets;
+using SkiaSharp;
+using SkiaSharp.Views.Desktop;
 
 namespace Equalizer.Presentation.Overlay;
 
@@ -15,6 +18,7 @@ public partial class OverlayWindow : Window
 {
     private readonly IEqualizerService _service;
     private readonly ISettingsPort _settings;
+    private readonly WidgetManager? _widgetManager;
     private readonly CancellationTokenSource _cts = new();
     private bool _rendering;
     private readonly SolidColorBrush _barBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 255, 128));
@@ -39,11 +43,19 @@ public partial class OverlayWindow : Window
     private DateTime _settingsSnapshotAt;
     private double _lastMeasuredFps;
     private DateTime _lastFpsSampleAt = DateTime.MinValue;
+    private readonly SkiaOverlayRenderer _skiaRenderer = new();
+    private RenderingMode _currentRenderingMode = RenderingMode.Cpu;
+    private VisualizerFrame? _skiaFrameData;
 
-    public OverlayWindow(IEqualizerService service, ISettingsPort settings)
+    public OverlayWindow(IEqualizerService service, ISettingsPort settings, WidgetManager? widgetManager = null)
     {
         _service = service;
         _settings = settings;
+        _widgetManager = widgetManager;
+        if (_widgetManager != null)
+        {
+            _ = _widgetManager.LoadLayoutAsync();
+        }
         _barPen = new System.Windows.Media.Pen(_barBrush, 1.0)
         {
             StartLineCap = PenLineCap.Round,
@@ -64,10 +76,15 @@ public partial class OverlayWindow : Window
             _settingsRefreshTimer.Stop();
         };
         BarsCanvas.RenderTransform = _offset;
+        SkiaCanvas.RenderTransform = _offset;
         BarsCanvas.MouseLeftButtonDown += BarsCanvas_MouseLeftButtonDown;
         BarsCanvas.MouseMove += BarsCanvas_MouseMove;
         BarsCanvas.MouseLeftButtonUp += BarsCanvas_MouseLeftButtonUp;
         BarsCanvas.MouseRightButtonUp += BarsCanvas_MouseRightButtonUp;
+        SkiaCanvas.MouseLeftButtonDown += BarsCanvas_MouseLeftButtonDown;
+        SkiaCanvas.MouseMove += BarsCanvas_MouseMove;
+        SkiaCanvas.MouseLeftButtonUp += BarsCanvas_MouseLeftButtonUp;
+        SkiaCanvas.MouseRightButtonUp += BarsCanvas_MouseRightButtonUp;
         SaveMoveButton.Click += SaveMoveButton_Click;
         CancelMoveButton.Click += CancelMoveButton_Click;
         QuickApplyButton.Click += QuickApplyButton_Click;
@@ -159,23 +176,64 @@ public partial class OverlayWindow : Window
             if (vf.IsBeat) _beatPulse = Math.Min(1.0, _beatPulse + vf.BeatStrength * 1.2);
             _beatPulse *= 0.94; // slightly slower decay for a more visible pulse
 
-            var baseColor = System.Windows.Media.Color.FromRgb(color.R, color.G, color.B);
-            var pulsed = LerpColor(baseColor, System.Windows.Media.Colors.White, (float)(0.35 * _beatPulse));
-            if (_barBrush.Color != pulsed)
+            // Check if rendering mode changed
+            if (_currentRenderingMode != s.RenderingMode)
             {
-                _barBrush.Color = pulsed;
-                _glowBrush.Color = pulsed;
-            }
-
-            using (var dc = BarsCanvas.RenderOpen())
-            {
-                if (s.VisualizerMode == VisualizerMode.Circular)
+                _currentRenderingMode = s.RenderingMode;
+                if (_currentRenderingMode == RenderingMode.Gpu)
                 {
-                    RenderCircular(dc, vf, data, s, width, height);
+                    BarsCanvas.Visibility = Visibility.Collapsed;
+                    SkiaCanvas.Visibility = Visibility.Visible;
                 }
                 else
                 {
-                    RenderLinearBars(dc, vf, data, s, width, height, spacing);
+                    BarsCanvas.Visibility = Visibility.Visible;
+                    SkiaCanvas.Visibility = Visibility.Collapsed;
+                }
+            }
+
+            // GPU rendering mode - use SkiaSharp
+            if (_currentRenderingMode == RenderingMode.Gpu)
+            {
+                _skiaFrameData = vf;
+                _skiaRenderer.BeatPulse = _beatPulse;
+                _skiaRenderer.CyclePhase = _cyclePhase / 360.0;
+                SkiaCanvas.InvalidateVisual();
+            }
+            else
+            {
+                // CPU rendering mode - use WPF DrawingContext
+                var baseColor = System.Windows.Media.Color.FromRgb(color.R, color.G, color.B);
+                var pulsed = LerpColor(baseColor, System.Windows.Media.Colors.White, (float)(0.35 * _beatPulse));
+                if (_barBrush.Color != pulsed)
+                {
+                    _barBrush.Color = pulsed;
+                    _glowBrush.Color = pulsed;
+                }
+
+                using (var dc = BarsCanvas.RenderOpen())
+                {
+                    if (s.VisualizerMode == VisualizerMode.Circular)
+                    {
+                        RenderCircular(dc, vf, data, s, width, height);
+                    }
+                    else
+                    {
+                        RenderLinearBars(dc, vf, data, s, width, height, spacing);
+                    }
+                    
+                    // Render additional widgets
+                    if (_widgetManager != null)
+                    {
+                        _widgetManager.UpdateWidgets();
+                        _widgetManager.RenderWidgets(dc, width, height);
+                    }
+                    
+                    // Render widget edit overlay
+                    if (_widgetManager?.EditMode == true)
+                    {
+                        _widgetManager.RenderEditOverlay(dc, width, height);
+                    }
                 }
             }
 
@@ -208,12 +266,31 @@ public partial class OverlayWindow : Window
         EnsurePeaks(data.Length);
         var peakBarHeight = Math.Max(2.0, Math.Min(4.0, height * 0.01));
         var cornerRadius = s.BarCornerRadius;
+        
+        // Gradient colors
+        var startColor = s.Color;
+        var endColor = s.GradientEndColor;
+        var useGradient = s.GradientEnabled;
 
         for (int i = 0; i < data.Length; i++)
         {
             var scale = 1.0 + 0.12 * vf.Bass + 0.06 * vf.Treble + 0.18 * _beatPulse;
             var h = Math.Max(1.0, data[i] * height * scale * fade);
             var t = data.Length > 1 ? (double)i / (data.Length - 1) : 0.0;
+            
+            // Per-bar color for gradient mode
+            SolidColorBrush barBrush = _barBrush;
+            SolidColorBrush glowBrush = _glowBrush;
+            if (useGradient)
+            {
+                var gradientColor = ColorRgb.Lerp(startColor, endColor, t);
+                var pulsedGradient = LerpColor(
+                    System.Windows.Media.Color.FromRgb(gradientColor.R, gradientColor.G, gradientColor.B),
+                    System.Windows.Media.Colors.White,
+                    (float)(0.35 * _beatPulse));
+                barBrush = new SolidColorBrush(pulsedGradient);
+                glowBrush = new SolidColorBrush(pulsedGradient) { Opacity = s.GlowEnabled ? 0.35 : 0.0 };
+            }
 
             double widthScale = 1.0;
             if (s.BeatShapeEnabled)
@@ -235,16 +312,16 @@ public partial class OverlayWindow : Window
             var left = i * (barWidth + spacing) + (barWidth - w) * 0.5;
             var top = height - h;
 
-            if (_glowBrush.Opacity > 0.0)
+            if (s.GlowEnabled)
             {
                 var glowW = w * 1.15;
                 var glowH = Math.Max(1.0, h * 1.25);
                 var glowLeft = left - (glowW - w) * 0.5;
                 var glowTop = Math.Max(0.0, height - glowH);
-                dc.DrawRoundedRectangle(_glowBrush, null, new Rect(glowLeft, glowTop, glowW, glowH), cornerRadius, cornerRadius);
+                dc.DrawRoundedRectangle(glowBrush, null, new Rect(glowLeft, glowTop, glowW, glowH), cornerRadius, cornerRadius);
             }
 
-            dc.DrawRoundedRectangle(_barBrush, null, new Rect(left, top, w, h), cornerRadius, cornerRadius);
+            dc.DrawRoundedRectangle(barBrush, null, new Rect(left, top, w, h), cornerRadius, cornerRadius);
 
             var amp = (float)Math.Clamp(data[i] * scale * fade, 0.0, 1.0);
             var decayed = _peaks[i] * 0.985f;
@@ -273,7 +350,11 @@ public partial class OverlayWindow : Window
         var thickness = arcPerBar * 0.55;
         thickness = Math.Clamp(thickness, 1.5, targetRadius * 0.15);
         var glowEnabled = s.GlowEnabled;
-        _glowBrush.Opacity = glowEnabled ? 0.3 : 0.0;
+        
+        // Gradient colors
+        var startColor = s.Color;
+        var endColor = s.GradientEndColor;
+        var useGradient = s.GradientEnabled;
 
         for (int i = 0; i < data.Length; i++)
         {
@@ -289,6 +370,23 @@ public partial class OverlayWindow : Window
             var y1 = cy + sin * innerRadius;
             var x2 = cx + cos * radius;
             var y2 = cy + sin * radius;
+            
+            var t = data.Length > 1 ? (double)i / (data.Length - 1) : 0.0;
+            
+            // Per-bar pen for gradient mode
+            System.Windows.Media.Pen barPen = _barPen;
+            System.Windows.Media.Pen glowPen = _glowPen;
+            if (useGradient)
+            {
+                var gradientColor = ColorRgb.Lerp(startColor, endColor, t);
+                var pulsedGradient = LerpColor(
+                    System.Windows.Media.Color.FromRgb(gradientColor.R, gradientColor.G, gradientColor.B),
+                    System.Windows.Media.Colors.White,
+                    (float)(0.35 * _beatPulse));
+                var brush = new SolidColorBrush(pulsedGradient);
+                barPen = new System.Windows.Media.Pen(brush, thickness);
+                glowPen = new System.Windows.Media.Pen(new SolidColorBrush(pulsedGradient) { Opacity = 0.3 }, thickness * 1.5);
+            }
 
             double localThickness = thickness;
             if (s.BeatShapeEnabled)
@@ -303,14 +401,14 @@ public partial class OverlayWindow : Window
                 localThickness = thickness * (1.0 + 0.5 * beatFactor * (0.5 + 0.5 * regionWeight));
             }
 
-            if (glowEnabled && _glowBrush.Opacity > 0.0)
+            if (glowEnabled)
             {
-                _glowPen.Thickness = localThickness * 1.5;
-                dc.DrawLine(_glowPen, new System.Windows.Point(x1, y1), new System.Windows.Point(x2, y2));
+                glowPen.Thickness = localThickness * 1.5;
+                dc.DrawLine(glowPen, new System.Windows.Point(x1, y1), new System.Windows.Point(x2, y2));
             }
 
-            _barPen.Thickness = localThickness;
-            dc.DrawLine(_barPen, new System.Windows.Point(x1, y1), new System.Windows.Point(x2, y2));
+            barPen.Thickness = localThickness;
+            dc.DrawLine(barPen, new System.Windows.Point(x1, y1), new System.Windows.Point(x2, y2));
         }
     }
 
@@ -558,6 +656,21 @@ public partial class OverlayWindow : Window
 
     public double LastMeasuredFps => _lastMeasuredFps;
     public DateTime LastFpsSampleAt => _lastFpsSampleAt;
+
+    private void SkiaCanvas_PaintSurface(object sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        var width = e.Info.Width;
+        var height = e.Info.Height;
+
+        if (_skiaFrameData == null || !TryGetSettingsSnapshot(out var s) || s == null)
+        {
+            canvas.Clear(SKColors.Transparent);
+            return;
+        }
+
+        _skiaRenderer.Render(canvas, width, height, _skiaFrameData, s, _quickColorOverride);
+    }
 }
 
 public sealed class VisualizerSurface : FrameworkElement

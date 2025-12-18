@@ -89,6 +89,12 @@ public sealed class JsonSettingsRepository : ISettingsPort
         public bool BeatShapeEnabled { get; set; } = false;
         public bool GlowEnabled { get; set; } = false;
         public bool PerfOverlayEnabled { get; set; } = false;
+        public bool GradientEnabled { get; set; } = false;
+        public byte GradientEndR { get; set; } = 255;
+        public byte GradientEndG { get; set; } = 0;
+        public byte GradientEndB { get; set; } = 128;
+        public string? AudioDeviceId { get; set; } = null;
+        public int RenderingMode { get; set; } = 0; // RenderingMode.Cpu
 
         public EqualizerSettings ToDomain() => new EqualizerSettings(
             BarsCount, Responsiveness, Smoothing, new ColorRgb(ColorR, ColorG, ColorB),
@@ -99,7 +105,9 @@ public sealed class JsonSettingsRepository : ISettingsPort
             SilenceFadeOutSeconds, SilenceFadeInSeconds,
             PitchReactiveColorEnabled,
             BassEmphasis, TrebleEmphasis,
-            BeatShapeEnabled, GlowEnabled, PerfOverlayEnabled);
+            BeatShapeEnabled, GlowEnabled, PerfOverlayEnabled,
+            GradientEnabled, new ColorRgb(GradientEndR, GradientEndG, GradientEndB), AudioDeviceId,
+            (RenderingMode)RenderingMode);
 
         public static SettingsDto FromDomain(EqualizerSettings s) => new SettingsDto
         {
@@ -128,7 +136,13 @@ public sealed class JsonSettingsRepository : ISettingsPort
             TrebleEmphasis = s.TrebleEmphasis,
             BeatShapeEnabled = s.BeatShapeEnabled,
             GlowEnabled = s.GlowEnabled,
-            PerfOverlayEnabled = s.PerfOverlayEnabled
+            PerfOverlayEnabled = s.PerfOverlayEnabled,
+            GradientEnabled = s.GradientEnabled,
+            GradientEndR = s.GradientEndColor.R,
+            GradientEndG = s.GradientEndColor.G,
+            GradientEndB = s.GradientEndColor.B,
+            AudioDeviceId = s.AudioDeviceId,
+            RenderingMode = (int)s.RenderingMode
         };
     }
 }

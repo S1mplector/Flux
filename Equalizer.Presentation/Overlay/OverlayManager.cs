@@ -1,7 +1,10 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 using Equalizer.Presentation.Interop;
+using Forms = System.Windows.Forms;
 
 namespace Equalizer.Presentation.Overlay;
 
@@ -91,4 +94,18 @@ public sealed class OverlayManager : IOverlayManager
     }
 
     public Task ResetPositionAsync() => Task.CompletedTask;
+    
+    public IReadOnlyList<MonitorInfo> GetMonitors()
+    {
+        return Forms.Screen.AllScreens.Select(s => new MonitorInfo(
+            s.DeviceName,
+            $"Display - {s.Bounds.Width}x{s.Bounds.Height}",
+            s.Bounds.Width,
+            s.Bounds.Height,
+            s.Primary,
+            IsVisible
+        )).ToList();
+    }
+    
+    public Task RefreshMonitorsAsync() => Task.CompletedTask;
 }

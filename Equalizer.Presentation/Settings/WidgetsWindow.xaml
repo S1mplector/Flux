@@ -1,0 +1,156 @@
+<Window x:Class="Equalizer.Presentation.Settings.WidgetsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Widget Manager" Width="700" Height="500" WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Widgets" FontSize="20" FontWeight="Bold" Margin="12,12,12,8"/>
+
+        <!-- Widget List -->
+        <Border Grid.Row="1" Grid.Column="0" BorderBrush="#333" BorderThickness="1" Margin="12,0,6,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="Active Widgets" FontWeight="SemiBold" Margin="8,8,8,4"/>
+                <ListBox x:Name="WidgetList" Grid.Row="1" SelectionChanged="WidgetList_SelectionChanged" Margin="4">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding IsEnabled}" Checked="WidgetEnabled_Changed" Unchecked="WidgetEnabled_Changed" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding DisplayName}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- Widget Settings Panel -->
+        <Border Grid.Row="1" Grid.Column="1" BorderBrush="#333" BorderThickness="1" Margin="6,0,12,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="SettingsPanel" Margin="12">
+                    <TextBlock x:Name="NoSelectionText" Text="Select a widget to configure" Foreground="Gray"/>
+                    
+                    <!-- Common Settings -->
+                    <StackPanel x:Name="CommonSettings" Visibility="Collapsed">
+                        <TextBlock Text="Position" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="60"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <TextBlock Text="Anchor" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="AnchorCombo" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4" SelectionChanged="AnchorCombo_SelectionChanged">
+                                <ComboBoxItem Content="Top Left" Tag="0"/>
+                                <ComboBoxItem Content="Top Center" Tag="1"/>
+                                <ComboBoxItem Content="Top Right" Tag="2"/>
+                                <ComboBoxItem Content="Middle Left" Tag="3"/>
+                                <ComboBoxItem Content="Center" Tag="4"/>
+                                <ComboBoxItem Content="Middle Right" Tag="5"/>
+                                <ComboBoxItem Content="Bottom Left" Tag="6"/>
+                                <ComboBoxItem Content="Bottom Center" Tag="7"/>
+                                <ComboBoxItem Content="Bottom Right" Tag="8"/>
+                            </ComboBox>
+                            
+                            <TextBlock Grid.Row="1" Text="X Offset" VerticalAlignment="Center"/>
+                            <Slider x:Name="XOffsetSlider" Grid.Row="1" Grid.Column="1" Minimum="-500" Maximum="500" ValueChanged="PositionSlider_ValueChanged"/>
+                            <TextBox x:Name="XOffsetValue" Grid.Row="1" Grid.Column="2" Margin="8,4,0,4" IsReadOnly="True"/>
+                            
+                            <TextBlock Grid.Row="2" Text="Y Offset" VerticalAlignment="Center"/>
+                            <Slider x:Name="YOffsetSlider" Grid.Row="2" Grid.Column="1" Minimum="-500" Maximum="500" ValueChanged="PositionSlider_ValueChanged"/>
+                            <TextBox x:Name="YOffsetValue" Grid.Row="2" Grid.Column="2" Margin="8,4,0,4" IsReadOnly="True"/>
+                            
+                            <TextBlock Grid.Row="3" Text="Width" VerticalAlignment="Center"/>
+                            <Slider x:Name="WidthSlider" Grid.Row="3" Grid.Column="1" Minimum="0" Maximum="800" ValueChanged="SizeSlider_ValueChanged"/>
+                            <TextBox x:Name="WidthValue" Grid.Row="3" Grid.Column="2" Margin="8,4,0,4" IsReadOnly="True"/>
+                            
+                            <TextBlock Grid.Row="4" Text="Height" VerticalAlignment="Center"/>
+                            <Slider x:Name="HeightSlider" Grid.Row="4" Grid.Column="1" Minimum="0" Maximum="400" ValueChanged="SizeSlider_ValueChanged"/>
+                            <TextBox x:Name="HeightValue" Grid.Row="4" Grid.Column="2" Margin="8,4,0,4" IsReadOnly="True"/>
+                        </Grid>
+
+                        <!-- Clock-specific settings -->
+                        <StackPanel x:Name="ClockSettings" Visibility="Collapsed" Margin="0,16,0,0">
+                            <TextBlock Text="Clock Settings" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <CheckBox x:Name="Clock24Hour" Content="Use 24-hour format" Checked="ClockSetting_Changed" Unchecked="ClockSetting_Changed"/>
+                            <CheckBox x:Name="ClockShowSeconds" Content="Show seconds" Margin="0,4,0,0" Checked="ClockSetting_Changed" Unchecked="ClockSetting_Changed"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Font size:" VerticalAlignment="Center" Width="70"/>
+                                <Slider x:Name="ClockFontSize" Minimum="12" Maximum="120" Width="150" ValueChanged="ClockSetting_Changed"/>
+                                <TextBlock x:Name="ClockFontSizeValue" Text="48" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Date-specific settings -->
+                        <StackPanel x:Name="DateSettings" Visibility="Collapsed" Margin="0,16,0,0">
+                            <TextBlock Text="Date Settings" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Format:" VerticalAlignment="Center" Width="70"/>
+                                <ComboBox x:Name="DateFormatCombo" Width="200" SelectionChanged="DateFormat_Changed">
+                                    <ComboBoxItem Content="dddd, MMMM d, yyyy" Tag="dddd, MMMM d, yyyy"/>
+                                    <ComboBoxItem Content="MMMM d, yyyy" Tag="MMMM d, yyyy"/>
+                                    <ComboBoxItem Content="d MMMM yyyy" Tag="d MMMM yyyy"/>
+                                    <ComboBoxItem Content="yyyy-MM-dd" Tag="yyyy-MM-dd"/>
+                                    <ComboBoxItem Content="dd/MM/yyyy" Tag="dd/MM/yyyy"/>
+                                    <ComboBoxItem Content="MM/dd/yyyy" Tag="MM/dd/yyyy"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <TextBlock Text="Font size:" VerticalAlignment="Center" Width="70"/>
+                                <Slider x:Name="DateFontSize" Minimum="10" Maximum="72" Width="150" ValueChanged="DateSetting_Changed"/>
+                                <TextBlock x:Name="DateFontSizeValue" Text="24" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- SystemInfo-specific settings -->
+                        <StackPanel x:Name="SystemInfoSettings" Visibility="Collapsed" Margin="0,16,0,0">
+                            <TextBlock Text="System Info Settings" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <CheckBox x:Name="SysShowCpu" Content="Show CPU usage" Checked="SysInfoSetting_Changed" Unchecked="SysInfoSetting_Changed"/>
+                            <CheckBox x:Name="SysShowRam" Content="Show RAM usage" Margin="0,4,0,0" Checked="SysInfoSetting_Changed" Unchecked="SysInfoSetting_Changed"/>
+                            <CheckBox x:Name="SysShowBars" Content="Show progress bars" Margin="0,4,0,0" Checked="SysInfoSetting_Changed" Unchecked="SysInfoSetting_Changed"/>
+                        </StackPanel>
+
+                        <Button x:Name="DeleteWidgetButton" Content="Delete Widget" Margin="0,24,0,0" HorizontalAlignment="Left" Click="DeleteWidget_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Bottom buttons -->
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Left" Margin="12,8,12,12">
+            <Button x:Name="AddWidgetButton" Content="+ Add Widget" Click="AddWidget_Click" Padding="12,6"/>
+            <ComboBox x:Name="AddWidgetTypeCombo" Width="150" Margin="8,0,0,0">
+                <ComboBoxItem Content="Clock" Tag="clock"/>
+                <ComboBoxItem Content="Date" Tag="date"/>
+                <ComboBoxItem Content="System Info" Tag="systeminfo"/>
+            </ComboBox>
+        </StackPanel>
+        
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,8,12,12">
+            <Button x:Name="SaveButton" Content="Save" Width="80" Click="Save_Click"/>
+            <Button x:Name="CloseButton" Content="Close" Width="80" Margin="8,0,0,0" Click="Close_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -24,10 +24,27 @@ public sealed class WASAPILoopbackAudioInput : IAudioInputPort, IDisposable
     public int SampleRate { get; }
     public int Channels { get; }
 
-    public WASAPILoopbackAudioInput()
+    public WASAPILoopbackAudioInput() : this(null) { }
+
+    public WASAPILoopbackAudioInput(string? deviceId)
     {
         var enumerator = new MMDeviceEnumerator();
-        var device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        MMDevice device;
+        if (!string.IsNullOrEmpty(deviceId))
+        {
+            try
+            {
+                device = enumerator.GetDevice(deviceId);
+            }
+            catch
+            {
+                device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            }
+        }
+        else
+        {
+            device = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        }
         _capture = new WasapiLoopbackCapture(device);
         SampleRate = _capture.WaveFormat.SampleRate;
         Channels = _capture.WaveFormat.Channels;

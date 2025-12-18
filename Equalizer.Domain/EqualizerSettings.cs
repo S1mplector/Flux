@@ -26,6 +26,10 @@ public sealed class EqualizerSettings
     public bool BeatShapeEnabled { get; }
     public bool GlowEnabled { get; }
     public bool PerfOverlayEnabled { get; }
+    public bool GradientEnabled { get; }
+    public ColorRgb GradientEndColor { get; }
+    public string? AudioDeviceId { get; }
+    public RenderingMode RenderingMode { get; }
 
     public EqualizerSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color)
         : this(barsCount, responsiveness, smoothing, color,
@@ -154,7 +158,10 @@ public sealed class EqualizerSettings
             trebleEmphasis: 1.0,
             beatShapeEnabled: false,
             glowEnabled: false,
-            perfOverlayEnabled: false)
+            perfOverlayEnabled: false,
+            gradientEnabled: false,
+            gradientEndColor: new ColorRgb(255, 0, 128),
+            audioDeviceId: null)
     {
     }
 
@@ -168,7 +175,9 @@ public sealed class EqualizerSettings
         double silenceFadeOutSeconds, double silenceFadeInSeconds,
         bool pitchReactiveColorEnabled,
         double bassEmphasis, double trebleEmphasis,
-        bool beatShapeEnabled, bool glowEnabled, bool perfOverlayEnabled)
+        bool beatShapeEnabled, bool glowEnabled, bool perfOverlayEnabled,
+        bool gradientEnabled = false, ColorRgb? gradientEndColor = null, string? audioDeviceId = null,
+        RenderingMode renderingMode = RenderingMode.Cpu)
     {
         if (barsCount < 8 || barsCount > 256)
             throw new ArgumentOutOfRangeException(nameof(barsCount), "BarsCount must be between 8 and 256.");
@@ -217,6 +226,10 @@ public sealed class EqualizerSettings
         BeatShapeEnabled = beatShapeEnabled;
         GlowEnabled = glowEnabled;
         PerfOverlayEnabled = perfOverlayEnabled;
+        GradientEnabled = gradientEnabled;
+        GradientEndColor = gradientEndColor ?? new ColorRgb(255, 0, 128);
+        AudioDeviceId = audioDeviceId;
+        RenderingMode = renderingMode;
     }
 
     public static EqualizerSettings Default => new(
@@ -243,6 +256,10 @@ public sealed class EqualizerSettings
         trebleEmphasis: 1.0,
         beatShapeEnabled: false,
         glowEnabled: false,
-        perfOverlayEnabled: false
+        perfOverlayEnabled: false,
+        gradientEnabled: false,
+        gradientEndColor: new ColorRgb(255, 0, 128),
+        audioDeviceId: null,
+        renderingMode: RenderingMode.Cpu
     );
 }

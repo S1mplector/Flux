@@ -3,27 +3,81 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using Equalizer.Presentation.Interop;
 using Forms = System.Windows.Forms;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 using Equalizer.Application.Abstractions;
 using Equalizer.Domain;
 
 namespace Equalizer.Presentation.Overlay;
 
-public sealed class MultiMonitorOverlayManager : IOverlayManager
+public sealed class MultiMonitorOverlayManager : IOverlayManager, IDisposable
 {
     private readonly IServiceProvider _services;
     private readonly ISettingsPort _settings;
     private readonly Dictionary<string, OverlayWindow> _windows = new();
+    private readonly DispatcherTimer _monitorCheckTimer;
     private bool _clickThrough;
     private bool _alwaysOnTop;
     private bool _isVisible;
+    private int _lastMonitorCount;
+    private bool _disposed;
 
     public MultiMonitorOverlayManager(IServiceProvider services, ISettingsPort settings)
     {
         _services = services;
         _settings = settings;
+        _lastMonitorCount = Forms.Screen.AllScreens.Length;
+        
+        // Listen for display settings changes
+        SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
+        
+        // Periodic check for monitor changes (backup for edge cases)
+        _monitorCheckTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(3)
+        };
+        _monitorCheckTimer.Tick += OnMonitorCheckTick;
+        _monitorCheckTimer.Start();
+    }
+    
+    private void OnDisplaySettingsChanged(object? sender, EventArgs e)
+    {
+        // Display settings changed - refresh overlays
+        if (_isVisible)
+        {
+            _ = RefreshMonitorsAsync();
+        }
+    }
+    
+    private void OnMonitorCheckTick(object? sender, EventArgs e)
+    {
+        var currentCount = Forms.Screen.AllScreens.Length;
+        if (currentCount != _lastMonitorCount)
+        {
+            _lastMonitorCount = currentCount;
+            if (_isVisible)
+            {
+                _ = RefreshMonitorsAsync();
+            }
+        }
+    }
+    
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        
+        SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
+        _monitorCheckTimer.Stop();
+        
+        foreach (var win in _windows.Values)
+        {
+            try { win.Close(); } catch { }
+        }
+        _windows.Clear();
     }
 
     public bool IsVisible => _isVisible;
@@ -241,5 +295,69 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager
         WindowStyles.ApplyOverlayExtendedStyles(window, _clickThrough);
         WindowStyles.SetTopMost(window, _alwaysOnTop);
         if (!_alwaysOnTop) WindowStyles.SendToBottom(window);
+    }
+    
+    public IReadOnlyList<MonitorInfo> GetMonitors()
+    {
+        var result = new List<MonitorInfo>();
+        var allScreens = Forms.Screen.AllScreens;
+        
+        foreach (var screen in allScreens)
+        {
+            var friendlyName = GetFriendlyMonitorName(screen);
+            var hasOverlay = _windows.ContainsKey(screen.DeviceName) && 
+                             _windows[screen.DeviceName].IsVisible;
+            
+            result.Add(new MonitorInfo(
+                screen.DeviceName,
+                friendlyName,
+                screen.Bounds.Width,
+                screen.Bounds.Height,
+                screen.Primary,
+                hasOverlay));
+        }
+        
+        return result;
+    }
+    
+    private static string GetFriendlyMonitorName(Forms.Screen screen)
+    {
+        var name = screen.DeviceName;
+        // Extract display number from device name like \\.\DISPLAY1
+        if (name.StartsWith("\\\\.\\DISPLAY", StringComparison.OrdinalIgnoreCase))
+        {
+            var num = name.Substring(11);
+            var suffix = screen.Primary ? " (Primary)" : "";
+            return $"Display {num}{suffix} - {screen.Bounds.Width}x{screen.Bounds.Height}";
+        }
+        return $"{name} - {screen.Bounds.Width}x{screen.Bounds.Height}";
+    }
+    
+    public async Task RefreshMonitorsAsync()
+    {
+        _lastMonitorCount = Forms.Screen.AllScreens.Length;
+        
+        if (_isVisible)
+        {
+            // Re-show to reconfigure for current monitors
+            await ShowAsync();
+        }
+        else
+        {
+            // Just clean up stale windows
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                var currentScreenNames = Forms.Screen.AllScreens.Select(s => s.DeviceName).ToHashSet();
+                var stale = _windows.Keys.Where(k => !currentScreenNames.Contains(k)).ToList();
+                foreach (var key in stale)
+                {
+                    if (_windows.TryGetValue(key, out var win))
+                    {
+                        win.Close();
+                        _windows.Remove(key);
+                    }
+                }
+            });
+        }
     }
 }

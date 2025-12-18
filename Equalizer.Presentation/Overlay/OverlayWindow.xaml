@@ -4,12 +4,14 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:overlay="clr-namespace:Equalizer.Presentation.Overlay"
+        xmlns:skia="clr-namespace:SkiaSharp.Views.WPF;assembly=SkiaSharp.Views.WPF"
         mc:Ignorable="d"
         Title="Equalizer Overlay" Background="Transparent"
         WindowStyle="None" ResizeMode="NoResize" ShowInTaskbar="False"
         AllowsTransparency="True">
     <Grid>
         <overlay:VisualizerSurface x:Name="BarsCanvas" ClipToBounds="True" SnapsToDevicePixels="True"/>
+        <skia:SKElement x:Name="SkiaCanvas" Visibility="Collapsed" PaintSurface="SkiaCanvas_PaintSurface"/>
         <TextBlock x:Name="PerfText" Foreground="White" FontSize="11" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Bottom" Opacity="0.8" Visibility="Collapsed"/>
         <Border x:Name="ConfirmPanel" Background="#DD000000" CornerRadius="6" Padding="10" Width="260" Height="80" Visibility="Collapsed"
                 HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0">

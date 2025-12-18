@@ -15,6 +15,7 @@ public partial class SettingsWindow : Window
 {
     private readonly ISettingsPort _settings;
     private readonly Overlay.IOverlayManager _overlay;
+    private readonly IAudioDeviceProvider? _audioDevices;
     private readonly DispatcherTimer _resourceTimer;
     private readonly Process _currentProcess;
     private TimeSpan _lastCpuTime;
@@ -22,10 +23,11 @@ public partial class SettingsWindow : Window
     private readonly List<PerformanceCounter> _gpuCounters = new();
     private bool _gpuAvailable;
 
-    public SettingsWindow(ISettingsPort settings, Overlay.IOverlayManager overlay)
+    public SettingsWindow(ISettingsPort settings, Overlay.IOverlayManager overlay, IAudioDeviceProvider? audioDevices = null)
     {
         _settings = settings;
         _overlay = overlay;
+        _audioDevices = audioDevices;
         InitializeComponent();
         Loaded += OnLoaded;
         SaveButton.Click += OnSave;
@@ -51,6 +53,9 @@ public partial class SettingsWindow : Window
         ProfileCombo.SelectionChanged += OnProfileChanged;
         FadeOutSlider.ValueChanged += (_, __) => FadeOutValue.Text = FadeOutSlider.Value.ToString("0.00");
         FadeInSlider.ValueChanged += (_, __) => FadeInValue.Text = FadeInSlider.Value.ToString("0.00");
+        GradientEndR.ValueChanged += (_, __) => UpdateGradientPreview();
+        GradientEndG.ValueChanged += (_, __) => UpdateGradientPreview();
+        GradientEndB.ValueChanged += (_, __) => UpdateGradientPreview();
 
         _currentProcess = Process.GetCurrentProcess();
         _lastCpuTime = _currentProcess.TotalProcessorTime;
@@ -131,6 +136,10 @@ public partial class SettingsWindow : Window
                 // Fall back to target FPS when overlay isn't rendering
                 FpsText.Text = $"FPS: {(int)FpsSlider.Value} (target)";
             }
+
+            // Calculate and display estimated audio latency
+            var latencyMs = CalculateEstimatedLatency();
+            LatencyText.Text = $"Latency: ~{latencyMs:0} ms";
         }
         catch
         {
@@ -207,30 +216,8 @@ public partial class SettingsWindow : Window
         CornerRadiusSlider.Value = s.BarCornerRadius;
         CornerRadiusValue.Text = s.BarCornerRadius.ToString("0.0");
 
-        // Populate monitors
-        MonitorCombo.Items.Clear();
-        foreach (var screen in Forms.Screen.AllScreens)
-        {
-            var item = new ComboBoxItem { Content = screen.DeviceName, Tag = screen.DeviceName };
-            MonitorCombo.Items.Add(item);
-            if (!string.IsNullOrEmpty(s.SpecificMonitorDeviceName) &&
-                string.Equals(screen.DeviceName, s.SpecificMonitorDeviceName, StringComparison.OrdinalIgnoreCase))
-            {
-                MonitorCombo.SelectedItem = item;
-            }
-        }
-        if (MonitorCombo.SelectedItem == null && Forms.Screen.PrimaryScreen != null)
-        {
-            var primary = Forms.Screen.PrimaryScreen.DeviceName;
-            foreach (ComboBoxItem item in MonitorCombo.Items)
-            {
-                if (string.Equals((string)item.Tag, primary, StringComparison.OrdinalIgnoreCase))
-                {
-                    MonitorCombo.SelectedItem = item;
-                    break;
-                }
-            }
-        }
+        // Populate monitors with friendly names
+        PopulateMonitorCombo(s.SpecificMonitorDeviceName);
 
         // Display mode
         SetDisplayModeSelection(s.DisplayMode);
@@ -256,9 +243,78 @@ public partial class SettingsWindow : Window
         TrebleEmphasisValue.Text = s.TrebleEmphasis.ToString("0.00");
 
         GlowEnabledCheckBox.IsChecked = s.GlowEnabled;
+        BeatShapeEnabledCheckBox.IsChecked = s.BeatShapeEnabled;
+        
+        // Gradient
+        GradientEnabledCheckBox.IsChecked = s.GradientEnabled;
+        GradientEndR.Value = s.GradientEndColor.R;
+        GradientEndG.Value = s.GradientEndColor.G;
+        GradientEndB.Value = s.GradientEndColor.B;
+        UpdateGradientPreview();
+        
+        // Audio devices
+        PopulateAudioDevices(s.AudioDeviceId);
+        
+        // Theme presets
+        PopulateThemePresets();
 
         // Performance profile (infer from current values)
         SetProfileFromCurrentValues();
+        
+        // Rendering mode
+        SetRenderingModeSelection(s.RenderingMode);
+    }
+    
+    private void SetRenderingModeSelection(RenderingMode mode)
+    {
+        int tag = (int)mode;
+        foreach (ComboBoxItem item in RenderingModeCombo.Items)
+        {
+            if (int.TryParse(item.Tag?.ToString(), out int t) && t == tag)
+            {
+                RenderingModeCombo.SelectedItem = item;
+                return;
+            }
+        }
+    }
+    
+    private RenderingMode GetSelectedRenderingMode()
+    {
+        if (RenderingModeCombo.SelectedItem is ComboBoxItem item && int.TryParse(item.Tag?.ToString(), out int t))
+        {
+            return (RenderingMode)t;
+        }
+        return RenderingMode.Cpu;
+    }
+    
+    private void PopulateAudioDevices(string? selectedDeviceId)
+    {
+        AudioDeviceCombo.Items.Clear();
+        AudioDeviceCombo.Items.Add(new ComboBoxItem { Content = "(Default output device)", Tag = "" });
+        AudioDeviceCombo.SelectedIndex = 0;
+        
+        if (_audioDevices == null) return;
+        
+        var devices = _audioDevices.GetOutputDevices();
+        foreach (var device in devices)
+        {
+            var label = device.IsDefault ? $"{device.Name} (Default)" : device.Name;
+            var item = new ComboBoxItem { Content = label, Tag = device.Id };
+            AudioDeviceCombo.Items.Add(item);
+            if (!string.IsNullOrEmpty(selectedDeviceId) && device.Id == selectedDeviceId)
+            {
+                AudioDeviceCombo.SelectedItem = item;
+            }
+        }
+    }
+    
+    private void UpdateGradientPreview()
+    {
+        var color = System.Windows.Media.Color.FromRgb(
+            (byte)GradientEndR.Value,
+            (byte)GradientEndG.Value,
+            (byte)GradientEndB.Value);
+        GradientPreview.Background = new System.Windows.Media.SolidColorBrush(color);
     }
 
     private async void OnSave(object sender, RoutedEventArgs e)
@@ -287,6 +343,16 @@ public partial class SettingsWindow : Window
             double bassEmphasis = BassEmphasisSlider.Value;
             double trebleEmphasis = TrebleEmphasisSlider.Value;
             bool glow = GlowEnabledCheckBox.IsChecked == true;
+            bool beatShape = BeatShapeEnabledCheckBox.IsChecked == true;
+            bool gradientEnabled = GradientEnabledCheckBox.IsChecked == true;
+            var gradientEndColor = new ColorRgb(
+                (byte)GradientEndR.Value,
+                (byte)GradientEndG.Value,
+                (byte)GradientEndB.Value);
+            string? audioDeviceId = (AudioDeviceCombo.SelectedItem as ComboBoxItem)?.Tag as string;
+            if (string.IsNullOrEmpty(audioDeviceId)) audioDeviceId = null;
+            var renderingMode = GetSelectedRenderingMode();
+            
             string? deviceName = null;
             if (displayMode == MonitorDisplayMode.Specific && MonitorCombo.SelectedItem is ComboBoxItem sel)
                 deviceName = sel.Tag as string;
@@ -302,7 +368,9 @@ public partial class SettingsWindow : Window
                 fadeOutSeconds, fadeInSeconds,
                 pitchReactiveColorEnabled: current.PitchReactiveColorEnabled,
                 bassEmphasis, trebleEmphasis,
-                beatShapeEnabled: current.BeatShapeEnabled, glowEnabled: glow, perfOverlayEnabled: current.PerfOverlayEnabled);
+                beatShapeEnabled: beatShape, glowEnabled: glow, perfOverlayEnabled: current.PerfOverlayEnabled,
+                gradientEnabled: gradientEnabled, gradientEndColor: gradientEndColor, audioDeviceId: audioDeviceId,
+                renderingMode: renderingMode);
             await _settings.SaveAsync(s);
 
             // Immediately reflect changes in overlays
@@ -457,5 +525,145 @@ public partial class SettingsWindow : Window
             };
         }
         return VisualizerMode.Bars;
+    }
+
+    private double CalculateEstimatedLatency()
+    {
+        // Estimate total audio pipeline latency based on current settings
+        const int sampleRate = 48000; // Typical WASAPI sample rate
+        
+        double smoothing = SmoothSlider.Value;
+        int targetFps = (int)FpsSlider.Value;
+        
+        // FFT window size depends on smoothing and FPS (mirrors EqualizerService logic)
+        int fftSamples;
+        if (smoothing <= 0.3 && targetFps >= 120)
+            fftSamples = 256;
+        else if (smoothing <= 0.5 && targetFps >= 60)
+            fftSamples = 512;
+        else if (smoothing >= 0.7 && targetFps <= 30)
+            fftSamples = 2048;
+        else
+            fftSamples = 512;
+        
+        // Audio buffer latency (~30ms at 48kHz with current settings)
+        double bufferLatencyMs = (sampleRate / 32.0) / sampleRate * 1000.0; // ~31ms
+        
+        // FFT window latency (half the window on average)
+        double fftLatencyMs = (fftSamples / 2.0) / sampleRate * 1000.0;
+        
+        // Hop latency (25% of window)
+        double hopLatencyMs = (fftSamples / 4.0) / sampleRate * 1000.0;
+        
+        // Frame interval latency
+        double frameLatencyMs = 1000.0 / Math.Max(targetFps, 10);
+        
+        // Total estimated latency
+        return bufferLatencyMs + fftLatencyMs + hopLatencyMs + frameLatencyMs;
+    }
+    
+    private void PopulateThemePresets()
+    {
+        ThemePresetCombo.Items.Clear();
+        ThemePresetCombo.Items.Add(new ComboBoxItem { Content = "(Select a preset)", Tag = null });
+        foreach (var preset in ThemePreset.BuiltIn)
+        {
+            ThemePresetCombo.Items.Add(new ComboBoxItem { Content = preset.Name, Tag = preset });
+        }
+        ThemePresetCombo.SelectedIndex = 0;
+    }
+    
+    private void ThemePresetCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Just selection change - actual apply happens on button click
+    }
+    
+    private void ApplyPresetButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ThemePresetCombo.SelectedItem is not ComboBoxItem item || item.Tag is not ThemePreset preset)
+            return;
+        
+        // Apply preset values to UI
+        ColorR.Value = preset.Color.R;
+        ColorG.Value = preset.Color.G;
+        ColorB.Value = preset.Color.B;
+        ColorRValue.Text = preset.Color.R.ToString();
+        ColorGValue.Text = preset.Color.G.ToString();
+        ColorBValue.Text = preset.Color.B.ToString();
+        
+        GradientEnabledCheckBox.IsChecked = preset.GradientEnabled;
+        GradientEndR.Value = preset.GradientEndColor.R;
+        GradientEndG.Value = preset.GradientEndColor.G;
+        GradientEndB.Value = preset.GradientEndColor.B;
+        UpdateGradientPreview();
+        
+        ColorCycleEnabled.IsChecked = preset.ColorCycleEnabled;
+        ColorCycleSpeed.Value = preset.ColorCycleSpeedHz;
+        ColorCycleSpeedValue.Text = preset.ColorCycleSpeedHz.ToString("0.00");
+        
+        CornerRadiusSlider.Value = preset.BarCornerRadius;
+        CornerRadiusValue.Text = preset.BarCornerRadius.ToString("0.0");
+        
+        GlowEnabledCheckBox.IsChecked = preset.GlowEnabled;
+        BeatShapeEnabledCheckBox.IsChecked = preset.BeatShapeEnabled;
+        
+        BassEmphasisSlider.Value = preset.BassEmphasis;
+        BassEmphasisValue.Text = preset.BassEmphasis.ToString("0.00");
+        TrebleEmphasisSlider.Value = preset.TrebleEmphasis;
+        TrebleEmphasisValue.Text = preset.TrebleEmphasis.ToString("0.00");
+    }
+    
+    private void PopulateMonitorCombo(string? selectedDeviceName)
+    {
+        MonitorCombo.Items.Clear();
+        
+        // Use friendly names from overlay manager if available
+        var monitors = _overlay.GetMonitors();
+        
+        foreach (var monitor in monitors)
+        {
+            var item = new ComboBoxItem 
+            { 
+                Content = monitor.FriendlyName, 
+                Tag = monitor.DeviceName 
+            };
+            MonitorCombo.Items.Add(item);
+            
+            if (!string.IsNullOrEmpty(selectedDeviceName) &&
+                string.Equals(monitor.DeviceName, selectedDeviceName, StringComparison.OrdinalIgnoreCase))
+            {
+                MonitorCombo.SelectedItem = item;
+            }
+        }
+        
+        // Select primary if nothing selected
+        if (MonitorCombo.SelectedItem == null && monitors.Count > 0)
+        {
+            var primary = monitors.FirstOrDefault(m => m.IsPrimary);
+            if (primary != null)
+            {
+                foreach (ComboBoxItem item in MonitorCombo.Items)
+                {
+                    if (string.Equals((string)item.Tag, primary.DeviceName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        MonitorCombo.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+            else if (MonitorCombo.Items.Count > 0)
+            {
+                MonitorCombo.SelectedIndex = 0;
+            }
+        }
+    }
+    
+    private async void RefreshMonitorsButton_Click(object sender, RoutedEventArgs e)
+    {
+        await _overlay.RefreshMonitorsAsync();
+        
+        // Re-populate the monitor combo with updated list
+        var currentSelection = (MonitorCombo.SelectedItem as ComboBoxItem)?.Tag as string;
+        PopulateMonitorCombo(currentSelection);
     }
 }

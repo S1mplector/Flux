@@ -7,6 +7,7 @@ using Equalizer.Infrastructure.DependencyInjection;
 using Equalizer.Presentation.Overlay;
 using Equalizer.Presentation.Tray;
 using Equalizer.Presentation.Hotkeys;
+using Equalizer.Presentation.Widgets;
 using Equalizer.Application.Abstractions;
 using Equalizer.Presentation.Splash;
 
@@ -46,10 +47,22 @@ public partial class App : System.Windows.Application
                     services.AddEqualizerApplication();
                     services.AddEqualizerInfrastructure();
                     services.AddSingleton<IOverlayManager, MultiMonitorOverlayManager>();
-                    services.AddTransient( typeof(Overlay.OverlayWindow));
+                    services.AddTransient(typeof(Overlay.OverlayWindow));
                     services.AddTransient(typeof(Settings.SettingsWindow));
                     services.AddHostedService<TrayIconHostedService>();
                     services.AddHostedService<GlobalHotkeyService>();
+                    
+                    // Widget system
+                    services.AddSingleton<IWidgetRegistry>(sp =>
+                    {
+                        var registry = new WidgetRegistry();
+                        registry.Register(new ClockWidgetRenderer());
+                        registry.Register(new DateWidgetRenderer());
+                        registry.Register(new SystemInfoWidgetRenderer());
+                        return registry;
+                    });
+                    services.AddSingleton<WidgetManager>();
+                    services.AddTransient<Settings.WidgetsWindow>();
                 })
                 .Build();
 
