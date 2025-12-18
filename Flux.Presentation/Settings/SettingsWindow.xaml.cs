@@ -401,7 +401,8 @@ public partial class SettingsWindow : FluentWindow
                 bassEmphasis, trebleEmphasis,
                 beatShapeEnabled: beatShape, glowEnabled: glow, perfOverlayEnabled: current.PerfOverlayEnabled,
                 gradientEnabled: gradientEnabled, gradientEndColor: gradientEndColor, audioDeviceId: audioDeviceId,
-                renderingMode: renderingMode);
+                renderingMode: renderingMode,
+                monitorOffsets: current.MonitorOffsets);
             await _settings.SaveAsync(s);
 
             // Immediately reflect changes in overlays

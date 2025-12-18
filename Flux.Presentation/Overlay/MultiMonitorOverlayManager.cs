@@ -110,11 +110,12 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager, IDisposable
         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
         {
             var targets = GetTargetScreens(s);
-            EnsureWindows(targets);
+            EnsureWindows(targets, s);
             foreach (var kv in _windows)
             {
                 if (targets.Any(sc => sc.DeviceName == kv.Key))
                 {
+                    kv.Value.SyncOffset(s);
                     if (!kv.Value.IsVisible) kv.Value.Show();
                     ApplyStyles(kv.Value);
                 }
@@ -188,7 +189,10 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager, IDisposable
             s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds,
             pitchReactiveColorEnabled: s.PitchReactiveColorEnabled,
             s.BassEmphasis, s.TrebleEmphasis,
-            beatShapeEnabled: s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
+            beatShapeEnabled: s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled,
+            gradientEnabled: s.GradientEnabled, gradientEndColor: s.GradientEndColor,
+            audioDeviceId: s.AudioDeviceId, renderingMode: s.RenderingMode,
+            monitorOffsets: new Dictionary<string, MonitorOffset>(StringComparer.OrdinalIgnoreCase));
         await _settings.SaveAsync(updated);
 
         await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -218,11 +222,16 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager, IDisposable
             trebleEmphasis: s.TrebleEmphasis,
             beatShapeEnabled: s.BeatShapeEnabled,
             glowEnabled: s.GlowEnabled,
-            perfOverlayEnabled: s.PerfOverlayEnabled);
+            perfOverlayEnabled: s.PerfOverlayEnabled,
+            gradientEnabled: s.GradientEnabled,
+            gradientEndColor: s.GradientEndColor,
+            audioDeviceId: s.AudioDeviceId,
+            renderingMode: s.RenderingMode,
+            monitorOffsets: s.MonitorOffsets);
         await _settings.SaveAsync(updated);
     }
 
-    private void EnsureWindows(IEnumerable<Forms.Screen> targetScreens)
+    private void EnsureWindows(IEnumerable<Forms.Screen> targetScreens, FluxSettings settings)
     {
         var screens = targetScreens;
         var keys = _windows.Keys.ToHashSet();
@@ -236,11 +245,15 @@ public sealed class MultiMonitorOverlayManager : IOverlayManager, IDisposable
             {
                 var win = _services.GetRequiredService<OverlayWindow>();
                 ConfigureForScreen(win, screen);
+                win.SetMonitorDevice(screen.DeviceName);
+                win.SyncOffset(settings);
                 _windows[key] = win;
             }
             else
             {
                 ConfigureForScreen(_windows[key], screen);
+                _windows[key].SetMonitorDevice(screen.DeviceName);
+                _windows[key].SyncOffset(settings);
             }
         }
 

@@ -110,7 +110,7 @@ public sealed class WidgetManager
             .ToList();
     }
     
-    public WidgetConfig? HitTest(WpfPoint point, double canvasWidth, double canvasHeight)
+    public WidgetConfig? HitTest(WpfPoint point, double canvasWidth, double canvasHeight, string? monitorDeviceName = null)
     {
         if (_currentLayout == null) return null;
         
@@ -119,6 +119,12 @@ public sealed class WidgetManager
         {
             var widget = _currentLayout.Widgets[i];
             if (!widget.IsEnabled) continue;
+            if (!string.IsNullOrEmpty(monitorDeviceName) &&
+                !string.IsNullOrEmpty(widget.MonitorDeviceName) &&
+                !string.Equals(widget.MonitorDeviceName, monitorDeviceName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
             
             var bounds = GetWidgetBounds(widget, canvasWidth, canvasHeight);
             if (bounds.Contains(point))
@@ -172,13 +178,17 @@ public sealed class WidgetManager
         return new WpfRect(x, y, w, h);
     }
     
-    public void StartDrag(WpfPoint point, double canvasWidth, double canvasHeight)
+    public void StartDrag(WpfPoint point, double canvasWidth, double canvasHeight, string? monitorDeviceName = null)
     {
         if (!_editMode) return;
         
-        var widget = HitTest(point, canvasWidth, canvasHeight);
+        var widget = HitTest(point, canvasWidth, canvasHeight, monitorDeviceName);
         if (widget != null)
         {
+            if (!string.IsNullOrEmpty(monitorDeviceName))
+            {
+                widget.MonitorDeviceName = monitorDeviceName;
+            }
             _selectedWidget = widget;
             _draggingWidget = widget;
             _dragStartPoint = point;
@@ -227,13 +237,13 @@ public sealed class WidgetManager
         _draggingWidget = null;
     }
     
-    public void SelectWidget(WpfPoint point, double canvasWidth, double canvasHeight)
+    public void SelectWidget(WpfPoint point, double canvasWidth, double canvasHeight, string? monitorDeviceName = null)
     {
         if (!_editMode) return;
-        _selectedWidget = HitTest(point, canvasWidth, canvasHeight);
+        _selectedWidget = HitTest(point, canvasWidth, canvasHeight, monitorDeviceName);
     }
     
-    public void RenderEditOverlay(DrawingContext dc, double canvasWidth, double canvasHeight)
+    public void RenderEditOverlay(DrawingContext dc, double canvasWidth, double canvasHeight, string? monitorDeviceName = null)
     {
         if (!_editMode || _currentLayout == null) return;
         
@@ -243,6 +253,12 @@ public sealed class WidgetManager
         foreach (var widget in _currentLayout.Widgets)
         {
             if (!widget.IsEnabled) continue;
+            if (!string.IsNullOrEmpty(monitorDeviceName) &&
+                !string.IsNullOrEmpty(widget.MonitorDeviceName) &&
+                !string.Equals(widget.MonitorDeviceName, monitorDeviceName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
             
             var bounds = GetWidgetBounds(widget, canvasWidth, canvasHeight);
             

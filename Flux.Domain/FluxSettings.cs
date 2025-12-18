@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Flux.Domain;
 
 public sealed class FluxSettings
@@ -30,6 +32,7 @@ public sealed class FluxSettings
     public ColorRgb GradientEndColor { get; }
     public string? AudioDeviceId { get; }
     public RenderingMode RenderingMode { get; }
+    public IReadOnlyDictionary<string, MonitorOffset> MonitorOffsets { get; }
 
     public FluxSettings(int barsCount, double responsiveness, double smoothing, ColorRgb color)
         : this(barsCount, responsiveness, smoothing, color,
@@ -177,7 +180,8 @@ public sealed class FluxSettings
         double bassEmphasis, double trebleEmphasis,
         bool beatShapeEnabled, bool glowEnabled, bool perfOverlayEnabled,
         bool gradientEnabled = false, ColorRgb? gradientEndColor = null, string? audioDeviceId = null,
-        RenderingMode renderingMode = RenderingMode.Cpu)
+        RenderingMode renderingMode = RenderingMode.Cpu,
+        IReadOnlyDictionary<string, MonitorOffset>? monitorOffsets = null)
     {
         if (barsCount < 8 || barsCount > 256)
             throw new ArgumentOutOfRangeException(nameof(barsCount), "BarsCount must be between 8 and 256.");
@@ -230,6 +234,9 @@ public sealed class FluxSettings
         GradientEndColor = gradientEndColor ?? new ColorRgb(255, 0, 128);
         AudioDeviceId = audioDeviceId;
         RenderingMode = renderingMode;
+        MonitorOffsets = monitorOffsets != null
+            ? new Dictionary<string, MonitorOffset>(monitorOffsets, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, MonitorOffset>(StringComparer.OrdinalIgnoreCase);
     }
 
     public static FluxSettings Default => new(
@@ -260,6 +267,7 @@ public sealed class FluxSettings
         gradientEnabled: false,
         gradientEndColor: new ColorRgb(255, 0, 128),
         audioDeviceId: null,
-        renderingMode: RenderingMode.Cpu
+        renderingMode: RenderingMode.Cpu,
+        monitorOffsets: null
     );
 }

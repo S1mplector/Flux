@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -95,6 +96,7 @@ public sealed class JsonSettingsRepository : ISettingsPort
         public byte GradientEndB { get; set; } = 128;
         public string? AudioDeviceId { get; set; } = null;
         public int RenderingMode { get; set; } = 0; // RenderingMode.Cpu
+        public Dictionary<string, OffsetDto> MonitorOffsets { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
         public FluxSettings ToDomain() => new FluxSettings(
             BarsCount, Responsiveness, Smoothing, new ColorRgb(ColorR, ColorG, ColorB),
@@ -107,7 +109,11 @@ public sealed class JsonSettingsRepository : ISettingsPort
             BassEmphasis, TrebleEmphasis,
             BeatShapeEnabled, GlowEnabled, PerfOverlayEnabled,
             GradientEnabled, new ColorRgb(GradientEndR, GradientEndG, GradientEndB), AudioDeviceId,
-            (RenderingMode)RenderingMode);
+            (RenderingMode)RenderingMode,
+            monitorOffsets: MonitorOffsets?.ToDictionary(
+                kvp => kvp.Key,
+                kvp => new MonitorOffset(kvp.Value?.X ?? 0.0, kvp.Value?.Y ?? 0.0),
+                StringComparer.OrdinalIgnoreCase));
 
         public static SettingsDto FromDomain(FluxSettings s) => new SettingsDto
         {
@@ -142,7 +148,17 @@ public sealed class JsonSettingsRepository : ISettingsPort
             GradientEndG = s.GradientEndColor.G,
             GradientEndB = s.GradientEndColor.B,
             AudioDeviceId = s.AudioDeviceId,
-            RenderingMode = (int)s.RenderingMode
+            RenderingMode = (int)s.RenderingMode,
+            MonitorOffsets = s.MonitorOffsets.ToDictionary(
+                kvp => kvp.Key,
+                kvp => new OffsetDto { X = kvp.Value.X, Y = kvp.Value.Y },
+                StringComparer.OrdinalIgnoreCase)
         };
+    }
+
+    private sealed class OffsetDto
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
     }
 }

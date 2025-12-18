@@ -37,6 +37,7 @@ public partial class OverlayWindow : Window
     private bool _isDragging;
     private System.Windows.Point _dragStartPoint;
     private System.Windows.Point _startOffset;
+    private string? _monitorDeviceName;
     private ColorRgb? _quickColorOverride;
     private readonly object _settingsCacheLock = new();
     private FluxSettings? _settingsSnapshot;
@@ -98,7 +99,6 @@ public partial class OverlayWindow : Window
         QuickColorG.ValueChanged += QuickColorSlider_ValueChanged;
         QuickColorB.ValueChanged += QuickColorSlider_ValueChanged;
         QuickEyedropperButton.Click += QuickEyedropperButton_Click;
-        _ = ApplyInitialOffsetAsync();
         _settingsRefreshTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromMilliseconds(250) // Refresh more frequently to keep cache fresh
@@ -111,8 +111,34 @@ public partial class OverlayWindow : Window
     private async Task ApplyInitialOffsetAsync()
     {
         var s = await _settings.GetAsync();
-        _offset.X = s.OffsetX;
-        _offset.Y = s.OffsetY;
+        var offset = GetMonitorOffset(s);
+        _offset.X = offset.X;
+        _offset.Y = offset.Y;
+    }
+
+    public void SetMonitorDevice(string deviceName)
+    {
+        _monitorDeviceName = deviceName;
+        _ = ApplyInitialOffsetAsync();
+    }
+
+    public string? MonitorDeviceName => _monitorDeviceName;
+
+    public void SyncOffset(FluxSettings settings)
+    {
+        var offset = GetMonitorOffset(settings);
+        _offset.X = offset.X;
+        _offset.Y = offset.Y;
+    }
+
+    private MonitorOffset GetMonitorOffset(FluxSettings s)
+    {
+        if (!string.IsNullOrWhiteSpace(_monitorDeviceName) &&
+            s.MonitorOffsets.TryGetValue(_monitorDeviceName, out var offset))
+        {
+            return offset;
+        }
+        return new MonitorOffset(s.OffsetX, s.OffsetY);
     }
 
     private void OnRendering(object? sender, EventArgs e)
@@ -234,13 +260,13 @@ public partial class OverlayWindow : Window
                     if (_widgetManager != null)
                     {
                         _widgetManager.UpdateWidgets();
-                        _widgetManager.RenderWidgets(wdc, width, height);
+                        _widgetManager.RenderWidgets(wdc, width, height, _monitorDeviceName);
                     }
                     
                     // Render widget edit overlay
                     if (_widgetManager?.EditMode == true)
                     {
-                        _widgetManager.RenderEditOverlay(wdc, width, height);
+                        _widgetManager.RenderEditOverlay(wdc, width, height, _monitorDeviceName);
                     }
                 }
             }
@@ -467,7 +493,7 @@ public partial class OverlayWindow : Window
     {
         if (_widgetManager?.EditMode != true) return;
         var pos = e.GetPosition(WidgetCanvas);
-        _widgetManager.StartDrag(pos, WidgetCanvas.ActualWidth, WidgetCanvas.ActualHeight);
+        _widgetManager.StartDrag(pos, WidgetCanvas.ActualWidth, WidgetCanvas.ActualHeight, _monitorDeviceName);
         if (_widgetManager.SelectedWidget != null)
         {
             WidgetCanvas.CaptureMouse();
@@ -509,6 +535,11 @@ public partial class OverlayWindow : Window
     private async void SaveMoveButton_Click(object sender, RoutedEventArgs e)
     {
         var s = await _settings.GetAsync();
+        var offsets = new Dictionary<string, MonitorOffset>(s.MonitorOffsets, StringComparer.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(_monitorDeviceName))
+        {
+            offsets[_monitorDeviceName] = new MonitorOffset(_offset.X, _offset.Y);
+        }
         var updated = new FluxSettings(
             s.BarsCount, s.Responsiveness, s.Smoothing, s.Color,
             s.TargetFps, s.ColorCycleEnabled, s.ColorCycleSpeedHz, s.BarCornerRadius,
@@ -519,7 +550,10 @@ public partial class OverlayWindow : Window
             s.SilenceFadeOutSeconds, s.SilenceFadeInSeconds,
             pitchReactiveColorEnabled: s.PitchReactiveColorEnabled,
             s.BassEmphasis, s.TrebleEmphasis,
-            beatShapeEnabled: s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
+            beatShapeEnabled: s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled,
+            gradientEnabled: s.GradientEnabled, gradientEndColor: s.GradientEndColor,
+            audioDeviceId: s.AudioDeviceId, renderingMode: s.RenderingMode,
+            monitorOffsets: offsets);
         await _settings.SaveAsync(updated);
         ConfirmPanel.Visibility = Visibility.Collapsed;
     }
@@ -527,8 +561,9 @@ public partial class OverlayWindow : Window
     private async void CancelMoveButton_Click(object sender, RoutedEventArgs e)
     {
         var s = await _settings.GetAsync();
-        _offset.X = s.OffsetX;
-        _offset.Y = s.OffsetY;
+        var offset = GetMonitorOffset(s);
+        _offset.X = offset.X;
+        _offset.Y = offset.Y;
         ConfirmPanel.Visibility = Visibility.Collapsed;
     }
 
@@ -563,7 +598,10 @@ public partial class OverlayWindow : Window
                 s.SilenceFadeInSeconds,
                 pitchReactiveColorEnabled: s.PitchReactiveColorEnabled,
                 s.BassEmphasis, s.TrebleEmphasis,
-                beatShapeEnabled: s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled);
+                beatShapeEnabled: s.BeatShapeEnabled, s.GlowEnabled, s.PerfOverlayEnabled,
+                gradientEnabled: s.GradientEnabled, gradientEndColor: s.GradientEndColor,
+                audioDeviceId: s.AudioDeviceId, renderingMode: s.RenderingMode,
+                monitorOffsets: s.MonitorOffsets);
 
             await _settings.SaveAsync(updated);
             QuickSettingsPanel.Visibility = Visibility.Collapsed;
