@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Flux" Width="400" Height="260" WindowStartupLocation="CenterScreen"
-        ResizeMode="NoResize" WindowStyle="None" ShowInTaskbar="False" AllowsTransparency="True"
-        Background="Transparent" ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica">
+        ResizeMode="NoResize" ShowInTaskbar="False"
+        ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica">
     
     <Grid>
         <Border Background="{ui:ThemeResource ApplicationBackgroundBrush}" CornerRadius="12" Padding="32">

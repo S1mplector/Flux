@@ -17,6 +17,8 @@ public partial class SettingsWindow : FluentWindow
     private readonly ISettingsPort _settings;
     private readonly Overlay.IOverlayManager _overlay;
     private readonly IAudioDeviceProvider? _audioDevices;
+    private readonly Dictionary<string, FrameworkElement> _pages;
+    private readonly Dictionary<string, NavigationViewItem> _navItems;
     private readonly DispatcherTimer _resourceTimer;
     private readonly Process _currentProcess;
     private TimeSpan _lastCpuTime;
@@ -30,6 +32,33 @@ public partial class SettingsWindow : FluentWindow
         _overlay = overlay;
         _audioDevices = audioDevices;
         InitializeComponent();
+
+        _navItems = new Dictionary<string, NavigationViewItem>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Audio", NavAudio },
+            { "Appearance", NavAppearance },
+            { "Performance", NavPerformance },
+            { "Display", NavDisplay },
+            { "Effects", NavEffects },
+            { "Presets", NavPresets }
+        };
+
+        _pages = new Dictionary<string, FrameworkElement>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Audio", AudioPage },
+            { "Appearance", AppearancePage },
+            { "Performance", PerformancePage },
+            { "Display", DisplayPage },
+            { "Effects", EffectsPage },
+            { "Presets", PresetsPage }
+        };
+
+        foreach (var navItem in _navItems.Values)
+        {
+            navItem.Click += NavigationItem_Click;
+        }
+        NavigateToSection("Audio");
+
         Loaded += OnLoaded;
         SaveButton.Click += OnSave;
         CancelButton.Click += (_, __) => Close();
@@ -394,15 +423,9 @@ public partial class SettingsWindow : FluentWindow
 
     private void NavigationView_SelectionChanged(object sender, RoutedEventArgs e)
     {
-        if (NavigationView.SelectedItem is Wpf.Ui.Controls.NavigationViewItem item)
+        if (NavigationView.SelectedItem is NavigationViewItem item && item.Tag is string tag)
         {
-            var tag = item.Tag?.ToString() ?? "Audio";
-            AudioPage.Visibility = tag == "Audio" ? Visibility.Visible : Visibility.Collapsed;
-            AppearancePage.Visibility = tag == "Appearance" ? Visibility.Visible : Visibility.Collapsed;
-            PerformancePage.Visibility = tag == "Performance" ? Visibility.Visible : Visibility.Collapsed;
-            DisplayPage.Visibility = tag == "Display" ? Visibility.Visible : Visibility.Collapsed;
-            EffectsPage.Visibility = tag == "Effects" ? Visibility.Visible : Visibility.Collapsed;
-            PresetsPage.Visibility = tag == "Presets" ? Visibility.Visible : Visibility.Collapsed;
+            NavigateToSection(tag);
         }
     }
 
@@ -681,5 +704,33 @@ public partial class SettingsWindow : FluentWindow
         // Re-populate the monitor combo with updated list
         var currentSelection = (MonitorCombo.SelectedItem as ComboBoxItem)?.Tag as string;
         PopulateMonitorCombo(currentSelection);
+    }
+
+    private void NavigationItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is NavigationViewItem item && item.Tag is string tag)
+        {
+            NavigateToSection(tag);
+        }
+    }
+
+    private void NavigateToSection(string tag)
+    {
+        if (!_pages.ContainsKey(tag))
+        {
+            tag = "Audio";
+        }
+
+        foreach (var (key, page) in _pages)
+        {
+            page.Visibility = string.Equals(key, tag, StringComparison.OrdinalIgnoreCase)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        foreach (var (key, navItem) in _navItems)
+        {
+            navItem.IsActive = string.Equals(key, tag, StringComparison.OrdinalIgnoreCase);
+        }
     }
 }
