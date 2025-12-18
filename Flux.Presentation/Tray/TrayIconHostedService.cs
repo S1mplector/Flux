@@ -30,11 +30,25 @@ public sealed class TrayIconHostedService : IHostedService
     {
         WpfApp.Current.Dispatcher.Invoke(() =>
         {
+            // Load custom icon from resources
+            Drawing.Icon? customIcon = null;
+            try
+            {
+                var resourceStream = WpfApp.GetResourceStream(new Uri("pack://application:,,,/Resources/icon.png"));
+                if (resourceStream != null)
+                {
+                    using var bitmap = new Drawing.Bitmap(resourceStream.Stream);
+                    var hIcon = bitmap.GetHicon();
+                    customIcon = Drawing.Icon.FromHandle(hIcon);
+                }
+            }
+            catch { }
+            
             _icon = new Forms.NotifyIcon
             {
                 Text = "Flux",
                 Visible = true,
-                Icon = Drawing.SystemIcons.Application
+                Icon = customIcon ?? Drawing.SystemIcons.Application
             };
 
             var contextMenu = new Forms.ContextMenuStrip();

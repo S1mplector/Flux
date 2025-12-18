@@ -6,10 +6,11 @@ using System.Windows.Controls;
 using Flux.Application.Abstractions;
 using Flux.Domain.Widgets;
 using Flux.Presentation.Widgets;
+using Wpf.Ui.Controls;
 
 namespace Flux.Presentation.Settings;
 
-public partial class WidgetsWindow : Window
+public partial class WidgetsWindow : FluentWindow
 {
     private readonly WidgetManager _widgetManager;
     private readonly IWidgetRegistry _registry;
@@ -243,9 +244,9 @@ public partial class WidgetsWindow : Window
         if (_selectedWidget == null) return;
         
         var result = System.Windows.MessageBox.Show($"Delete widget '{_selectedWidget.DisplayName}'?", "Confirm Delete", 
-            MessageBoxButton.YesNo, MessageBoxImage.Question);
+            System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
         
-        if (result == MessageBoxResult.Yes)
+        if (result == System.Windows.MessageBoxResult.Yes)
         {
             _widgetManager.RemoveWidget(_selectedWidget.Config.Id);
             RefreshWidgetList();
@@ -257,7 +258,7 @@ public partial class WidgetsWindow : Window
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
         await _widgetManager.SaveLayoutAsync();
-        System.Windows.MessageBox.Show("Widget layout saved.", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+        System.Windows.MessageBox.Show("Widget layout saved.", "Saved", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
     }
 
     private void Close_Click(object sender, RoutedEventArgs e)

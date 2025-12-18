@@ -7,11 +7,12 @@ using System.Windows.Threading;
 using Flux.Application.Abstractions;
 using Flux.Domain;
 using Flux.Presentation.Controls;
+using Wpf.Ui.Controls;
 using Forms = System.Windows.Forms;
 
 namespace Flux.Presentation.Settings;
 
-public partial class SettingsWindow : Window
+public partial class SettingsWindow : FluentWindow
 {
     private readonly ISettingsPort _settings;
     private readonly Overlay.IOverlayManager _overlay;
@@ -381,7 +382,7 @@ public partial class SettingsWindow : Window
         }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show(this, ex.Message, "Invalid settings", MessageBoxButton.OK, MessageBoxImage.Error);
+            System.Windows.MessageBox.Show(this, ex.Message, "Invalid settings", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
         }
     }
 
