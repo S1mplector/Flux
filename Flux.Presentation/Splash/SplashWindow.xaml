@@ -1,27 +1,78 @@
-<Window x:Class="Flux.Presentation.Splash.SplashWindow"
+<ui:FluentWindow x:Class="Flux.Presentation.Splash.SplashWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Flux" Width="420" Height="220" WindowStartupLocation="CenterScreen"
-        ResizeMode="NoResize" WindowStyle="ToolWindow" ShowInTaskbar="False">
-    <Border CornerRadius="8" BorderThickness="1" BorderBrush="#FFCCCCCC" Background="#FF1E1E1E" Padding="16">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Flux" Width="400" Height="260" WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize" WindowStyle="None" ShowInTaskbar="False" AllowsTransparency="True"
+        Background="Transparent" ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica">
+    
+    <Grid>
+        <Border Background="{ui:ThemeResource ApplicationBackgroundBrush}" CornerRadius="12" Padding="32">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.3"/>
+            </Border.Effect>
+            
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Orientation="Vertical">
-                <TextBlock Text="Flux" FontSize="20" FontWeight="Bold" Foreground="White" />
-                <TextBlock x:Name="VersionText" FontSize="12" Foreground="#FFCCCCCC" Margin="0,4,0,0" />
-            </StackPanel>
+                <!-- Header with Icon and Title -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Image Source="pack://application:,,,/Resources/icon.png" Width="48" Height="48" Margin="0,0,16,0" RenderOptions.BitmapScalingMode="HighQuality">
+                        <Image.RenderTransform>
+                            <ScaleTransform x:Name="IconScale" ScaleX="1" ScaleY="1"/>
+                        </Image.RenderTransform>
+                        <Image.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleX" From="0.8" To="1" Duration="0:0:0.4">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.3"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="IconScale" Storyboard.TargetProperty="ScaleY" From="0.8" To="1" Duration="0:0:0.4">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.3"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Image.Triggers>
+                    </Image>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Flux" FontSize="28" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="VersionText" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </StackPanel>
 
-            <StackPanel Grid.Row="1" Orientation="Vertical" VerticalAlignment="Center" Margin="0,16,0,16">
-                <ProgressBar IsIndeterminate="True" Height="18" />
-                <TextBlock x:Name="StatusText" Text="Starting..." Foreground="#FFEEEEEE" Margin="0,12,0,0" />
-            </StackPanel>
+                <!-- Progress Section -->
+                <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,24,0,24">
+                    <ui:ProgressRing x:Name="LoadingRing" IsIndeterminate="True" Width="40" Height="40" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="StatusText" Text="Starting..." HorizontalAlignment="Center" Margin="0,16,0,0" FontSize="13" Opacity="0.8">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="0.8" Duration="0:0:0.3"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
 
-            <TextBlock Grid.Row="2" Text="Caching and optimizing startup..." FontSize="10" Foreground="#FF888888" HorizontalAlignment="Right" />
-        </Grid>
-    </Border>
-</Window>
+                <!-- Footer -->
+                <TextBlock Grid.Row="2" Text="Audio Visualizer" FontSize="11" Opacity="0.4" HorizontalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</ui:FluentWindow>

@@ -1,10 +1,11 @@
 using System;
 using System.Reflection;
 using System.Windows;
+using Wpf.Ui.Controls;
 
 namespace Flux.Presentation.Splash;
 
-public partial class SplashWindow : Window
+public partial class SplashWindow : FluentWindow
 {
     public SplashWindow()
     {

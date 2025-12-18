@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="Flux Settings" Width="600" Height="700" MinWidth="550" MinHeight="500" 
+        Title="Flux Settings" Width="650" Height="700" MinWidth="550" MinHeight="500" 
         WindowStartupLocation="CenterScreen"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="Mica">
@@ -24,347 +24,357 @@
         <!-- Main Content with Navigation -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="180"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             
             <!-- Navigation Menu -->
-            <ui:NavigationView x:Name="NavigationView" Grid.Column="0" PaneDisplayMode="Left" IsBackButtonVisible="Collapsed" IsPaneToggleVisible="False" OpenPaneLength="200">
+            <ui:NavigationView x:Name="NavigationView" Grid.Column="0" PaneDisplayMode="Left" IsBackButtonVisible="Collapsed" IsPaneToggleVisible="False" OpenPaneLength="180" SelectionChanged="NavigationView_SelectionChanged">
                 <ui:NavigationView.MenuItems>
-                    <ui:NavigationViewItem Content="Audio" Icon="{ui:SymbolIcon Speaker124}" Tag="Audio"/>
-                    <ui:NavigationViewItem Content="Appearance" Icon="{ui:SymbolIcon Color24}" Tag="Appearance"/>
-                    <ui:NavigationViewItem Content="Performance" Icon="{ui:SymbolIcon Gauge24}" Tag="Performance"/>
-                    <ui:NavigationViewItem Content="Display" Icon="{ui:SymbolIcon Desktop24}" Tag="Display"/>
-                    <ui:NavigationViewItem Content="Effects" Icon="{ui:SymbolIcon Sparkle24}" Tag="Effects"/>
-                    <ui:NavigationViewItem Content="Presets" Icon="{ui:SymbolIcon Library24}" Tag="Presets"/>
+                    <ui:NavigationViewItem x:Name="NavAudio" Content="Audio" Icon="{ui:SymbolIcon Speaker124}" Tag="Audio"/>
+                    <ui:NavigationViewItem x:Name="NavAppearance" Content="Appearance" Icon="{ui:SymbolIcon Color24}" Tag="Appearance"/>
+                    <ui:NavigationViewItem x:Name="NavPerformance" Content="Performance" Icon="{ui:SymbolIcon Gauge24}" Tag="Performance"/>
+                    <ui:NavigationViewItem x:Name="NavDisplay" Content="Display" Icon="{ui:SymbolIcon Desktop24}" Tag="Display"/>
+                    <ui:NavigationViewItem x:Name="NavEffects" Content="Effects" Icon="{ui:SymbolIcon Sparkle24}" Tag="Effects"/>
+                    <ui:NavigationViewItem x:Name="NavPresets" Content="Presets" Icon="{ui:SymbolIcon Library24}" Tag="Presets"/>
                 </ui:NavigationView.MenuItems>
             </ui:NavigationView>
             
-            <!-- Settings Content -->
+            <!-- Settings Pages Container -->
             <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="24,16,24,16">
-                <StackPanel x:Name="SettingsContent">
-                    
-                    <!-- Audio Response Section -->
-                    <ui:CardExpander x:Name="AudioSection" Header="Audio Response" Icon="{ui:SymbolIcon Speaker124}" IsExpanded="True">
-                        <StackPanel  Margin="0,8,0,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Bars" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="BarsSlider" Grid.Column="1" Minimum="8" Maximum="256" TickFrequency="8" IsSnapToTickEnabled="True" Margin="16,0"/>
-                                <ui:TextBox x:Name="BarsValue" Grid.Column="2" PlaceholderText="64"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Responsiveness" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="RespSlider" Grid.Column="1" Minimum="0" Maximum="1" TickFrequency="0.05" Margin="16,0"/>
-                                <ui:TextBox x:Name="RespValue" Grid.Column="2" PlaceholderText="0.7"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Smoothing" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="SmoothSlider" Grid.Column="1" Minimum="0" Maximum="1" TickFrequency="0.05" Margin="16,0"/>
-                                <ui:TextBox x:Name="SmoothValue" Grid.Column="2" PlaceholderText="0.5"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Output device" VerticalAlignment="Center" Opacity="0.8"/>
-                                <ComboBox x:Name="AudioDeviceCombo" Grid.Column="1" Margin="16,0,0,0"/>
-                            </Grid>
-                        </StackPanel>
-                    </ui:CardExpander>
-                    
-                    <!-- Appearance Section -->
-                    <ui:CardExpander x:Name="AppearanceSection" Header="Appearance" Icon="{ui:SymbolIcon Color24}" IsExpanded="False">
-                        <StackPanel  Margin="0,8,0,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Primary color" VerticalAlignment="Center" Opacity="0.8"/>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal"  Margin="16,0,0,0">
-                                    <Border x:Name="ColorPreviewBorder" Width="32" Height="32" CornerRadius="4" Background="#00FF80"/>
-                                    <ui:Button x:Name="PickColorButton" Content="Pick Color" Appearance="Secondary"/>
+                <Grid>
+                    <!-- Audio Page -->
+                    <StackPanel x:Name="AudioPage" Visibility="Visible">
+                        <TextBlock Text="Audio Response" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20"/>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Bars" FontWeight="Medium"/>
+                                    <TextBlock Text="Number of frequency bars" Opacity="0.6" FontSize="12"/>
                                 </StackPanel>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="50"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Red" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="ColorR" Grid.Column="1" Minimum="0" Maximum="255" Margin="16,0"/>
-                                <ui:TextBox x:Name="ColorRValue" Grid.Column="2"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="50"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Green" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="ColorG" Grid.Column="1" Minimum="0" Maximum="255" Margin="16,0"/>
-                                <ui:TextBox x:Name="ColorGValue" Grid.Column="2"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="50"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Blue" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="ColorB" Grid.Column="1" Minimum="0" Maximum="255" Margin="16,0"/>
-                                <ui:TextBox x:Name="ColorBValue" Grid.Column="2"/>
-                            </Grid>
-                            <ui:CardControl>
-                                <ui:CardControl.Header>
-                                    <StackPanel>
-                                        <TextBlock Text="Color cycling" FontWeight="Medium"/>
-                                        <TextBlock Text="Automatically cycle through colors" Opacity="0.6" FontSize="12"/>
-                                    </StackPanel>
-                                </ui:CardControl.Header>
-                                <ui:ToggleSwitch x:Name="ColorCycleEnabled"/>
-                            </ui:CardControl>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Cycle speed (Hz)" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="ColorCycleSpeed" Grid.Column="1" Minimum="0" Maximum="5" TickFrequency="0.1" Margin="16,0"/>
-                                <ui:TextBox x:Name="ColorCycleSpeedValue" Grid.Column="2" PlaceholderText="0.2"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Corner radius" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="CornerRadiusSlider" Grid.Column="1" Minimum="0" Maximum="16" TickFrequency="1" Margin="16,0"/>
-                                <ui:TextBox x:Name="CornerRadiusValue" Grid.Column="2" PlaceholderText="1"/>
-                            </Grid>
-                        </StackPanel>
-                    </ui:CardExpander>
-                    
-                    <!-- Performance Section -->
-                    <ui:CardExpander x:Name="PerformanceSection" Header="Performance" Icon="{ui:SymbolIcon Gauge24}" IsExpanded="False">
-                        <StackPanel  Margin="0,8,0,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Rendering" VerticalAlignment="Center" Opacity="0.8"/>
-                                <ComboBox x:Name="RenderingModeCombo" Grid.Column="1" Margin="16,0,0,0">
-                                    <ComboBoxItem Content="CPU (WPF)" Tag="0"/>
-                                    <ComboBoxItem Content="GPU (SkiaSharp)" Tag="1"/>
-                                </ComboBox>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Target FPS" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="FpsSlider" Grid.Column="1" Minimum="10" Maximum="240" TickFrequency="5" IsSnapToTickEnabled="True" Margin="16,0"/>
-                                <ui:TextBox x:Name="FpsValue" Grid.Column="2" PlaceholderText="60"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Profile" VerticalAlignment="Center" Opacity="0.8"/>
-                                <ComboBox x:Name="ProfileCombo" Grid.Column="1" Margin="16,0,0,0">
-                                    <ComboBoxItem Content="Custom" Tag="custom"/>
-                                    <ComboBoxItem Content="Smooth" Tag="smooth"/>
-                                    <ComboBoxItem Content="Balanced" Tag="balanced"/>
-                                    <ComboBoxItem Content="Low latency" Tag="low"/>
-                                </ComboBox>
-                            </Grid>
-                            <ui:CardControl>
-                                <ui:CardControl.Header>
-                                    <StackPanel>
-                                        <TextBlock Text="Fade on silence" FontWeight="Medium"/>
-                                        <TextBlock Text="Fade out visualizer when no audio" Opacity="0.6" FontSize="12"/>
-                                    </StackPanel>
-                                </ui:CardControl.Header>
-                                <ui:ToggleSwitch x:Name="FadeOnSilenceEnabledCheckBox"/>
-                            </ui:CardControl>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Fade-out (s)" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="FadeOutSlider" Grid.Column="1" Minimum="0.1" Maximum="5" TickFrequency="0.1" Margin="16,0"/>
-                                <ui:TextBox x:Name="FadeOutValue" Grid.Column="2" PlaceholderText="0.5"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Fade-in (s)" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="FadeInSlider" Grid.Column="1" Minimum="0.1" Maximum="5" TickFrequency="0.1" Margin="16,0"/>
-                                <ui:TextBox x:Name="FadeInValue" Grid.Column="2" PlaceholderText="0.2"/>
-                            </Grid>
-                        </StackPanel>
-                    </ui:CardExpander>
-                    
-                    <!-- Display Section -->
-                    <ui:CardExpander x:Name="DisplaySection" Header="Display" Icon="{ui:SymbolIcon Desktop24}" IsExpanded="False">
-                        <StackPanel  Margin="0,8,0,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Display on" VerticalAlignment="Center" Opacity="0.8"/>
-                                <ComboBox x:Name="DisplayModeCombo" Grid.Column="1" Margin="16,0,8,0">
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="BarsSlider" Width="150" Minimum="8" Maximum="256" TickFrequency="8" IsSnapToTickEnabled="True"/>
+                                <ui:TextBox x:Name="BarsValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Responsiveness" FontWeight="Medium"/>
+                                    <TextBlock Text="How quickly bars react to audio" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="RespSlider" Width="150" Minimum="0" Maximum="1" TickFrequency="0.05"/>
+                                <ui:TextBox x:Name="RespValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Smoothing" FontWeight="Medium"/>
+                                    <TextBlock Text="Smoothness of bar movement" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="SmoothSlider" Width="150" Minimum="0" Maximum="1" TickFrequency="0.05"/>
+                                <ui:TextBox x:Name="SmoothValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Output Device" FontWeight="Medium"/>
+                                    <TextBlock Text="Audio source to visualize" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ComboBox x:Name="AudioDeviceCombo" Width="200"/>
+                        </ui:CardControl>
+                    </StackPanel>
+
+                    <!-- Appearance Page -->
+                    <StackPanel x:Name="AppearancePage" Visibility="Collapsed">
+                        <TextBlock Text="Appearance" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20"/>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Primary Color" FontWeight="Medium"/>
+                                    <TextBlock Text="Main color for the visualizer" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Border x:Name="ColorPreviewBorder" Width="32" Height="32" CornerRadius="4" Background="#00FF80"/>
+                                <ui:Button x:Name="PickColorButton" Content="Pick Color" Appearance="Secondary" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <TextBlock Text="Red" FontWeight="Medium"/>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="ColorR" Width="150" Minimum="0" Maximum="255"/>
+                                <ui:TextBox x:Name="ColorRValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <TextBlock Text="Green" FontWeight="Medium"/>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="ColorG" Width="150" Minimum="0" Maximum="255"/>
+                                <ui:TextBox x:Name="ColorGValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <TextBlock Text="Blue" FontWeight="Medium"/>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="ColorB" Width="150" Minimum="0" Maximum="255"/>
+                                <ui:TextBox x:Name="ColorBValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Color Cycling" FontWeight="Medium"/>
+                                    <TextBlock Text="Automatically cycle through colors" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ui:ToggleSwitch x:Name="ColorCycleEnabled"/>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Cycle Speed" FontWeight="Medium"/>
+                                    <TextBlock Text="Speed of color cycling (Hz)" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="ColorCycleSpeed" Width="150" Minimum="0" Maximum="5" TickFrequency="0.1"/>
+                                <ui:TextBox x:Name="ColorCycleSpeedValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Corner Radius" FontWeight="Medium"/>
+                                    <TextBlock Text="Roundness of bar corners" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="CornerRadiusSlider" Width="150" Minimum="0" Maximum="16" TickFrequency="1"/>
+                                <ui:TextBox x:Name="CornerRadiusValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                    </StackPanel>
+
+                    <!-- Performance Page -->
+                    <StackPanel x:Name="PerformancePage" Visibility="Collapsed">
+                        <TextBlock Text="Performance" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20"/>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Rendering Mode" FontWeight="Medium"/>
+                                    <TextBlock Text="CPU or GPU rendering" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ComboBox x:Name="RenderingModeCombo" Width="150">
+                                <ComboBoxItem Content="CPU (WPF)" Tag="0"/>
+                                <ComboBoxItem Content="GPU (SkiaSharp)" Tag="1"/>
+                            </ComboBox>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Target FPS" FontWeight="Medium"/>
+                                    <TextBlock Text="Frame rate limit" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="FpsSlider" Width="150" Minimum="10" Maximum="240" TickFrequency="5" IsSnapToTickEnabled="True"/>
+                                <ui:TextBox x:Name="FpsValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Profile" FontWeight="Medium"/>
+                                    <TextBlock Text="Preset performance profiles" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ComboBox x:Name="ProfileCombo" Width="150">
+                                <ComboBoxItem Content="Custom" Tag="custom"/>
+                                <ComboBoxItem Content="Smooth" Tag="smooth"/>
+                                <ComboBoxItem Content="Balanced" Tag="balanced"/>
+                                <ComboBoxItem Content="Low latency" Tag="low"/>
+                            </ComboBox>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Fade on Silence" FontWeight="Medium"/>
+                                    <TextBlock Text="Fade out when no audio" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ui:ToggleSwitch x:Name="FadeOnSilenceEnabledCheckBox"/>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <TextBlock Text="Fade Out Duration (s)" FontWeight="Medium"/>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="FadeOutSlider" Width="150" Minimum="0.1" Maximum="5" TickFrequency="0.1"/>
+                                <ui:TextBox x:Name="FadeOutValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <TextBlock Text="Fade In Duration (s)" FontWeight="Medium"/>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="FadeInSlider" Width="150" Minimum="0.1" Maximum="5" TickFrequency="0.1"/>
+                                <ui:TextBox x:Name="FadeInValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                    </StackPanel>
+
+                    <!-- Display Page -->
+                    <StackPanel x:Name="DisplayPage" Visibility="Collapsed">
+                        <TextBlock Text="Display" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20"/>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Display Mode" FontWeight="Medium"/>
+                                    <TextBlock Text="Which monitors to show on" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <ComboBox x:Name="DisplayModeCombo" Width="160">
                                     <ComboBoxItem Content="All monitors" Tag="0"/>
-                                    <ComboBoxItem Content="Primary monitor only" Tag="1"/>
+                                    <ComboBoxItem Content="Primary only" Tag="1"/>
                                     <ComboBoxItem Content="Specific monitor" Tag="2"/>
                                 </ComboBox>
-                                <ui:Button x:Name="RefreshMonitorsButton" Grid.Column="2" Icon="{ui:SymbolIcon ArrowSync24}" ToolTip="Refresh monitors" Click="RefreshMonitorsButton_Click"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Monitor" VerticalAlignment="Center" Opacity="0.8"/>
-                                <ComboBox x:Name="MonitorCombo" Grid.Column="1" Margin="16,0,0,0" IsEnabled="False"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Visualizer mode" VerticalAlignment="Center" Opacity="0.8"/>
-                                <ComboBox x:Name="VisualizerModeCombo" Grid.Column="1" Margin="16,0,0,0">
-                                    <ComboBoxItem Content="Bars" Tag="0"/>
-                                    <ComboBoxItem Content="Circular" Tag="1"/>
-                                </ComboBox>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Circle diameter" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="CircleDiameterSlider" Grid.Column="1" Minimum="100" Maximum="2000" TickFrequency="50" Margin="16,0"/>
-                                <ui:TextBox x:Name="CircleDiameterValue" Grid.Column="2" PlaceholderText="400"/>
-                            </Grid>
-                        </StackPanel>
-                    </ui:CardExpander>
-                    
-                    <!-- Effects Section -->
-                    <ui:CardExpander x:Name="EffectsSection" Header="Effects" Icon="{ui:SymbolIcon Sparkle24}" IsExpanded="False">
-                        <StackPanel Margin="0,8,0,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Bass emphasis" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="BassEmphasisSlider" Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.1" Margin="16,0"/>
-                                <ui:TextBox x:Name="BassEmphasisValue" Grid.Column="2" PlaceholderText="1.0"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="60"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Treble emphasis" VerticalAlignment="Center" Opacity="0.8"/>
-                                <Slider x:Name="TrebleEmphasisSlider" Grid.Column="1" Minimum="0" Maximum="2" TickFrequency="0.1" Margin="16,0"/>
-                                <ui:TextBox x:Name="TrebleEmphasisValue" Grid.Column="2" PlaceholderText="1.0"/>
-                            </Grid>
-                            <ui:CardControl>
-                                <ui:CardControl.Header>
-                                    <StackPanel>
-                                        <TextBlock Text="Glow effect" FontWeight="Medium"/>
-                                        <TextBlock Text="Add soft glow behind bars" Opacity="0.6" FontSize="12"/>
-                                    </StackPanel>
-                                </ui:CardControl.Header>
-                                <ui:ToggleSwitch x:Name="GlowEnabledCheckBox"/>
-                            </ui:CardControl>
-                            <ui:CardControl>
-                                <ui:CardControl.Header>
-                                    <StackPanel>
-                                        <TextBlock Text="Beat pulse" FontWeight="Medium"/>
-                                        <TextBlock Text="Pulse effect on beat detection" Opacity="0.6" FontSize="12"/>
-                                    </StackPanel>
-                                </ui:CardControl.Header>
-                                <ui:ToggleSwitch x:Name="BeatShapeEnabledCheckBox"/>
-                            </ui:CardControl>
-                            <ui:CardControl>
-                                <ui:CardControl.Header>
-                                    <StackPanel>
-                                        <TextBlock Text="Gradient" FontWeight="Medium"/>
-                                        <TextBlock Text="Bass-to-treble color gradient" Opacity="0.6" FontSize="12"/>
-                                    </StackPanel>
-                                </ui:CardControl.Header>
-                                <ui:ToggleSwitch x:Name="GradientEnabledCheckBox"/>
-                            </ui:CardControl>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Gradient end" VerticalAlignment="Center" Opacity="0.8"/>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0,0,0">
-                                    <Slider x:Name="GradientEndR" Minimum="0" Maximum="255" Width="70"/>
-                                    <Slider x:Name="GradientEndG" Minimum="0" Maximum="255" Width="70"/>
-                                    <Slider x:Name="GradientEndB" Minimum="0" Maximum="255" Width="70"/>
-                                    <Border x:Name="GradientPreview" Width="32" Height="24" CornerRadius="4" BorderBrush="{ui:ThemeResource ControlElevationBorderBrush}" BorderThickness="1" Margin="8,0,0,0"/>
+                                <ui:Button x:Name="RefreshMonitorsButton" Icon="{ui:SymbolIcon ArrowSync24}" ToolTip="Refresh" Margin="8,0,0,0" Click="RefreshMonitorsButton_Click"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <TextBlock Text="Monitor" FontWeight="Medium"/>
+                            </ui:CardControl.Header>
+                            <ComboBox x:Name="MonitorCombo" Width="200" IsEnabled="False"/>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Visualizer Mode" FontWeight="Medium"/>
+                                    <TextBlock Text="Bar style or circular" Opacity="0.6" FontSize="12"/>
                                 </StackPanel>
-                            </Grid>
-                        </StackPanel>
-                    </ui:CardExpander>
-                    
-                    <!-- Presets Section -->
-                    <ui:CardExpander x:Name="PresetsSection" Header="Theme Presets" Icon="{ui:SymbolIcon Library24}" IsExpanded="False">
-                        <StackPanel  Margin="0,8,0,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Preset" VerticalAlignment="Center" Opacity="0.8"/>
-                                <ComboBox x:Name="ThemePresetCombo" Grid.Column="1" Margin="16,0,8,0" SelectionChanged="ThemePresetCombo_SelectionChanged"/>
-                                <ui:Button x:Name="ApplyPresetButton" Grid.Column="2" Content="Apply" Appearance="Primary" Click="ApplyPresetButton_Click"/>
-                            </Grid>
-                        </StackPanel>
-                    </ui:CardExpander>
-                    
-                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ComboBox x:Name="VisualizerModeCombo" Width="150">
+                                <ComboBoxItem Content="Bars" Tag="0"/>
+                                <ComboBoxItem Content="Circular" Tag="1"/>
+                            </ComboBox>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Circle Diameter" FontWeight="Medium"/>
+                                    <TextBlock Text="Size for circular mode" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="CircleDiameterSlider" Width="150" Minimum="100" Maximum="2000" TickFrequency="50"/>
+                                <ui:TextBox x:Name="CircleDiameterValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                    </StackPanel>
+
+                    <!-- Effects Page -->
+                    <StackPanel x:Name="EffectsPage" Visibility="Collapsed">
+                        <TextBlock Text="Effects" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20"/>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Bass Emphasis" FontWeight="Medium"/>
+                                    <TextBlock Text="Boost low frequencies" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="BassEmphasisSlider" Width="150" Minimum="0" Maximum="2" TickFrequency="0.1"/>
+                                <ui:TextBox x:Name="BassEmphasisValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Treble Emphasis" FontWeight="Medium"/>
+                                    <TextBlock Text="Boost high frequencies" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="TrebleEmphasisSlider" Width="150" Minimum="0" Maximum="2" TickFrequency="0.1"/>
+                                <ui:TextBox x:Name="TrebleEmphasisValue" Width="50" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Glow Effect" FontWeight="Medium"/>
+                                    <TextBlock Text="Soft glow behind bars" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ui:ToggleSwitch x:Name="GlowEnabledCheckBox"/>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Beat Pulse" FontWeight="Medium"/>
+                                    <TextBlock Text="Pulse on beat detection" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ui:ToggleSwitch x:Name="BeatShapeEnabledCheckBox"/>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Gradient" FontWeight="Medium"/>
+                                    <TextBlock Text="Bass-to-treble color gradient" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ui:ToggleSwitch x:Name="GradientEnabledCheckBox"/>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <TextBlock Text="Gradient End Color" FontWeight="Medium"/>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="GradientEndR" Width="60" Minimum="0" Maximum="255" ToolTip="Red"/>
+                                <Slider x:Name="GradientEndG" Width="60" Minimum="0" Maximum="255" ToolTip="Green" Margin="4,0"/>
+                                <Slider x:Name="GradientEndB" Width="60" Minimum="0" Maximum="255" ToolTip="Blue"/>
+                                <Border x:Name="GradientPreview" Width="32" Height="24" CornerRadius="4" BorderThickness="1" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                    </StackPanel>
+
+                    <!-- Presets Page -->
+                    <StackPanel x:Name="PresetsPage" Visibility="Collapsed">
+                        <TextBlock Text="Theme Presets" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,20"/>
+                        <ui:CardControl Margin="0,0,0,12">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Select Preset" FontWeight="Medium"/>
+                                    <TextBlock Text="Apply a predefined theme" Opacity="0.6" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <ComboBox x:Name="ThemePresetCombo" Width="180" SelectionChanged="ThemePresetCombo_SelectionChanged"/>
+                                <ui:Button x:Name="ApplyPresetButton" Content="Apply" Appearance="Primary" Margin="8,0,0,0" Click="ApplyPresetButton_Click"/>
+                            </StackPanel>
+                        </ui:CardControl>
+                    </StackPanel>
+                </Grid>
             </ScrollViewer>
         </Grid>
         
@@ -375,16 +385,16 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" >
-                    <TextBlock x:Name="CpuUsageText" Text="CPU: -- %" Opacity="0.7" FontSize="12"/>
-                    <TextBlock x:Name="GpuUsageText" Text="GPU: -- %" Opacity="0.7" FontSize="12"/>
-                    <TextBlock x:Name="MemoryUsageText" Text="RAM: -- MB" Opacity="0.7" FontSize="12"/>
-                    <TextBlock x:Name="FpsText" Text="FPS: --" Opacity="0.7" FontSize="12"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="CpuUsageText" Text="CPU: --%" Opacity="0.7" FontSize="12" Margin="0,0,12,0"/>
+                    <TextBlock x:Name="GpuUsageText" Text="GPU: --%" Opacity="0.7" FontSize="12" Margin="0,0,12,0"/>
+                    <TextBlock x:Name="MemoryUsageText" Text="RAM: -- MB" Opacity="0.7" FontSize="12" Margin="0,0,12,0"/>
+                    <TextBlock x:Name="FpsText" Text="FPS: --" Opacity="0.7" FontSize="12" Margin="0,0,12,0"/>
                     <TextBlock x:Name="LatencyText" Text="Latency: -- ms" Foreground="#FF8800" FontSize="12"/>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" >
-                    <ui:Button x:Name="CancelButton" Content="Cancel" Appearance="Secondary" Width="100"/>
-                    <ui:Button x:Name="SaveButton" Content="Save" Appearance="Primary" Width="100"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ui:Button x:Name="CancelButton" Content="Cancel" Appearance="Secondary" Width="90" Margin="0,0,8,0"/>
+                    <ui:Button x:Name="SaveButton" Content="Save" Appearance="Primary" Width="90"/>
                 </StackPanel>
             </Grid>
         </Border>

@@ -57,6 +57,7 @@ public partial class SettingsWindow : FluentWindow
         GradientEndR.ValueChanged += (_, __) => UpdateGradientPreview();
         GradientEndG.ValueChanged += (_, __) => UpdateGradientPreview();
         GradientEndB.ValueChanged += (_, __) => UpdateGradientPreview();
+        CircleDiameterSlider.ValueChanged += (_, __) => CircleDiameterValue.Text = CircleDiameterSlider.Value.ToString("0");
 
         _currentProcess = Process.GetCurrentProcess();
         _lastCpuTime = _currentProcess.TotalProcessorTime;
@@ -389,6 +390,20 @@ public partial class SettingsWindow : FluentWindow
     private void OnDisplayModeChanged(object sender, SelectionChangedEventArgs e)
     {
         MonitorCombo.IsEnabled = GetSelectedDisplayMode() == MonitorDisplayMode.Specific;
+    }
+
+    private void NavigationView_SelectionChanged(object sender, RoutedEventArgs e)
+    {
+        if (NavigationView.SelectedItem is Wpf.Ui.Controls.NavigationViewItem item)
+        {
+            var tag = item.Tag?.ToString() ?? "Audio";
+            AudioPage.Visibility = tag == "Audio" ? Visibility.Visible : Visibility.Collapsed;
+            AppearancePage.Visibility = tag == "Appearance" ? Visibility.Visible : Visibility.Collapsed;
+            PerformancePage.Visibility = tag == "Performance" ? Visibility.Visible : Visibility.Collapsed;
+            DisplayPage.Visibility = tag == "Display" ? Visibility.Visible : Visibility.Collapsed;
+            EffectsPage.Visibility = tag == "Effects" ? Visibility.Visible : Visibility.Collapsed;
+            PresetsPage.Visibility = tag == "Presets" ? Visibility.Visible : Visibility.Collapsed;
+        }
     }
 
     private void OnPickColor(object? sender, RoutedEventArgs e)
