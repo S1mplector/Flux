@@ -8,11 +8,42 @@ using Flux.Presentation.Widgets;
 
 namespace Flux.Presentation.Overlay;
 
-public sealed class SkiaOverlayRenderer
+public sealed class SkiaOverlayRenderer : IDisposable
 {
     private float[]? _peaks;
     private double _beatPulse;
     private double _cyclePhase;
+    private bool _disposed;
+    private readonly SKPaint _barFillPaint = new SKPaint
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Fill
+    };
+    private readonly SKPaint _glowFillPaint = new SKPaint
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Fill,
+        MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
+    };
+    private readonly SKPaint _peakFillPaint = new SKPaint
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Fill,
+        Color = SKColors.White
+    };
+    private readonly SKPaint _barStrokePaint = new SKPaint
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeCap = SKStrokeCap.Round
+    };
+    private readonly SKPaint _glowStrokePaint = new SKPaint
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeCap = SKStrokeCap.Round,
+        MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2)
+    };
     
     public double BeatPulse
     {
@@ -69,25 +100,9 @@ public sealed class SkiaOverlayRenderer
         var endColor = settings.GradientEndColor;
         var useGradient = settings.GradientEnabled;
 
-        using var barPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill
-        };
-        
-        using var glowPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill,
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
-        };
-        
-        using var peakPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill,
-            Color = SKColors.White
-        };
+        var barPaint = _barFillPaint;
+        var glowPaint = _glowFillPaint;
+        var peakPaint = _peakFillPaint;
 
         for (int i = 0; i < data.Length; i++)
         {
@@ -174,20 +189,8 @@ public sealed class SkiaOverlayRenderer
         var endColor = settings.GradientEndColor;
         var useGradient = settings.GradientEnabled;
 
-        using var barPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeCap = SKStrokeCap.Round
-        };
-        
-        using var glowPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeCap = SKStrokeCap.Round,
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2)
-        };
+        var barPaint = _barStrokePaint;
+        var glowPaint = _glowStrokePaint;
 
         for (int i = 0; i < data.Length; i++)
         {
@@ -284,5 +287,16 @@ public sealed class SkiaOverlayRenderer
             (byte)(a.R + (b.R - a.R) * t),
             (byte)(a.G + (b.G - a.G) * t),
             (byte)(a.B + (b.B - a.B) * t));
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _barFillPaint.Dispose();
+        _glowFillPaint.Dispose();
+        _peakFillPaint.Dispose();
+        _barStrokePaint.Dispose();
+        _glowStrokePaint.Dispose();
     }
 }

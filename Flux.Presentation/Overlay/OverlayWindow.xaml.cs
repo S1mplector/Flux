@@ -32,6 +32,10 @@ public partial class OverlayWindow : Window
     private readonly SolidColorBrush _peakBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255));
     private readonly System.Windows.Media.Pen _barPen;
     private readonly System.Windows.Media.Pen _glowPen;
+    private SolidColorBrush[]? _gradientBarBrushes;
+    private SolidColorBrush[]? _gradientGlowBrushes;
+    private System.Windows.Media.Pen[]? _gradientBarPens;
+    private System.Windows.Media.Pen[]? _gradientGlowPens;
     private readonly TranslateTransform _offset = new TranslateTransform();
     private readonly DispatcherTimer _settingsRefreshTimer;
     private bool _isDragging;
@@ -75,6 +79,7 @@ public partial class OverlayWindow : Window
         {
             _cts.Cancel();
             _settingsRefreshTimer?.Stop();
+            _skiaRenderer.Dispose();
         };
         BarsCanvas.RenderTransform = _offset;
         SkiaCanvas.RenderTransform = _offset;
@@ -311,6 +316,14 @@ public partial class OverlayWindow : Window
         var startColor = s.Color;
         var endColor = s.GradientEndColor;
         var useGradient = s.GradientEnabled;
+        SolidColorBrush[]? gradientBars = null;
+        SolidColorBrush[]? gradientGlows = null;
+        if (useGradient)
+        {
+            EnsureGradientBrushes(data.Length);
+            gradientBars = _gradientBarBrushes;
+            gradientGlows = _gradientGlowBrushes;
+        }
 
         for (int i = 0; i < data.Length; i++)
         {
@@ -321,15 +334,20 @@ public partial class OverlayWindow : Window
             // Per-bar color for gradient mode
             SolidColorBrush barBrush = _barBrush;
             SolidColorBrush glowBrush = _glowBrush;
-            if (useGradient)
+            if (useGradient && gradientBars != null && gradientGlows != null)
             {
                 var gradientColor = ColorRgb.Lerp(startColor, endColor, t);
                 var pulsedGradient = LerpColor(
                     System.Windows.Media.Color.FromRgb(gradientColor.R, gradientColor.G, gradientColor.B),
                     System.Windows.Media.Colors.White,
                     (float)(0.35 * _beatPulse));
-                barBrush = new SolidColorBrush(pulsedGradient);
-                glowBrush = new SolidColorBrush(pulsedGradient) { Opacity = s.GlowEnabled ? 0.35 : 0.0 };
+                var bar = gradientBars[i];
+                var glow = gradientGlows[i];
+                bar.Color = pulsedGradient;
+                glow.Color = pulsedGradient;
+                glow.Opacity = s.GlowEnabled ? 0.35 : 0.0;
+                barBrush = bar;
+                glowBrush = glow;
             }
 
             double widthScale = 1.0;
@@ -395,6 +413,14 @@ public partial class OverlayWindow : Window
         var startColor = s.Color;
         var endColor = s.GradientEndColor;
         var useGradient = s.GradientEnabled;
+        System.Windows.Media.Pen[]? gradientBars = null;
+        System.Windows.Media.Pen[]? gradientGlows = null;
+        if (useGradient)
+        {
+            EnsureGradientPens(data.Length);
+            gradientBars = _gradientBarPens;
+            gradientGlows = _gradientGlowPens;
+        }
 
         for (int i = 0; i < data.Length; i++)
         {
@@ -416,16 +442,23 @@ public partial class OverlayWindow : Window
             // Per-bar pen for gradient mode
             System.Windows.Media.Pen barPen = _barPen;
             System.Windows.Media.Pen glowPen = _glowPen;
-            if (useGradient)
+            if (useGradient && gradientBars != null && gradientGlows != null)
             {
                 var gradientColor = ColorRgb.Lerp(startColor, endColor, t);
                 var pulsedGradient = LerpColor(
                     System.Windows.Media.Color.FromRgb(gradientColor.R, gradientColor.G, gradientColor.B),
                     System.Windows.Media.Colors.White,
                     (float)(0.35 * _beatPulse));
-                var brush = new SolidColorBrush(pulsedGradient);
-                barPen = new System.Windows.Media.Pen(brush, thickness);
-                glowPen = new System.Windows.Media.Pen(new SolidColorBrush(pulsedGradient) { Opacity = 0.3 }, thickness * 1.5);
+                var bar = gradientBars[i];
+                var glow = gradientGlows[i];
+                if (bar.Brush is SolidColorBrush barBrush) barBrush.Color = pulsedGradient;
+                if (glow.Brush is SolidColorBrush glowBrush)
+                {
+                    glowBrush.Color = pulsedGradient;
+                    glowBrush.Opacity = glowEnabled ? 0.3 : 0.0;
+                }
+                barPen = bar;
+                glowPen = glow;
             }
 
             double localThickness = thickness;
@@ -457,6 +490,50 @@ public partial class OverlayWindow : Window
         if (_peaks == null || _peaks.Length != count)
         {
             _peaks = count > 0 ? new float[count] : null;
+        }
+    }
+
+    private void EnsureGradientBrushes(int count)
+    {
+        if (_gradientBarBrushes != null && _gradientBarBrushes.Length == count &&
+            _gradientGlowBrushes != null && _gradientGlowBrushes.Length == count)
+        {
+            return;
+        }
+
+        _gradientBarBrushes = new SolidColorBrush[count];
+        _gradientGlowBrushes = new SolidColorBrush[count];
+        for (int i = 0; i < count; i++)
+        {
+            _gradientBarBrushes[i] = new SolidColorBrush(System.Windows.Media.Colors.Transparent);
+            _gradientGlowBrushes[i] = new SolidColorBrush(System.Windows.Media.Colors.Transparent) { Opacity = 0.35 };
+        }
+    }
+
+    private void EnsureGradientPens(int count)
+    {
+        if (_gradientBarPens != null && _gradientBarPens.Length == count &&
+            _gradientGlowPens != null && _gradientGlowPens.Length == count)
+        {
+            return;
+        }
+
+        _gradientBarPens = new System.Windows.Media.Pen[count];
+        _gradientGlowPens = new System.Windows.Media.Pen[count];
+        for (int i = 0; i < count; i++)
+        {
+            var barBrush = new SolidColorBrush(System.Windows.Media.Colors.Transparent);
+            var glowBrush = new SolidColorBrush(System.Windows.Media.Colors.Transparent) { Opacity = 0.3 };
+            _gradientBarPens[i] = new System.Windows.Media.Pen(barBrush, 1.0)
+            {
+                StartLineCap = PenLineCap.Round,
+                EndLineCap = PenLineCap.Round
+            };
+            _gradientGlowPens[i] = new System.Windows.Media.Pen(glowBrush, 1.0)
+            {
+                StartLineCap = PenLineCap.Round,
+                EndLineCap = PenLineCap.Round
+            };
         }
     }
 

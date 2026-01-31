@@ -28,6 +28,7 @@ public sealed class FluxService : IFluxService
     private DateTime _lastBeatAt = DateTime.MinValue;
     private FluxSettings? _settingsCache;
     private DateTime _settingsCacheAt;
+    private float[]? _silenceBars; // Reusable silent-frame buffer
     private CancellationTokenSource? _loopCts;
     private Task? _loopTask;
 
@@ -172,18 +173,27 @@ public sealed class FluxService : IFluxService
         float[] rawBars;
         if (isSilent)
         {
-            mag = _prevMag is { Length: > 0 } ? new double[_prevMag.Length] : Array.Empty<double>();
+            if (_prevMag != null)
+            {
+                Array.Clear(_prevMag, 0, _prevMag.Length);
+            }
+            mag = _prevMag ?? Array.Empty<double>();
+
+            if (_silenceBars == null || _silenceBars.Length != settings.BarsCount)
+                _silenceBars = new float[settings.BarsCount];
 
             if (settings.FadeOnSilenceEnabled && _previous != null && _previous.Length == settings.BarsCount)
             {
                 // Keep the last visible shape and let SilenceFade drive the visual fade-out
-                rawBars = (float[])_previous.Clone();
+                Array.Copy(_previous, _silenceBars, _previous.Length);
             }
             else
             {
                 // Legacy behaviour: decay to zero using smoothing
-                rawBars = new float[settings.BarsCount];
+                Array.Clear(_silenceBars, 0, _silenceBars.Length);
             }
+
+            rawBars = _silenceBars;
         }
         else
         {
@@ -316,7 +326,6 @@ public sealed class FluxService : IFluxService
         if (isSilent)
         {
             // Reset beat state on silence
-            if (_prevMag != null) Array.Clear(_prevMag, 0, _prevMag.Length);
             Array.Clear(_fluxHistory, 0, _fluxHistory.Length);
             _fluxIndex = 0;
             _fluxCount = 0;
