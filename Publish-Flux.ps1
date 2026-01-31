@@ -21,6 +21,7 @@ param(
     [switch]$SkipCopy,
     [switch]$CopyAsZip, # if not single-file, zip the folder when copying
     [switch]$UseTimestamp,
+    [bool]$UseFriendlyName = $true,
     [switch]$OpenOutput
 )
 
@@ -34,6 +35,17 @@ function Write-ErrorLine($Message) { Write-Host "[x] $Message" -ForegroundColor 
 function Assert-CommandExists([string]$Name) {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
         throw "Required command '$Name' is not available on PATH."
+    }
+}
+
+function Ensure-DotnetOnPath {
+    $userDotnetRoot = Join-Path $env:USERPROFILE ".dotnet"
+    $userDotnetExe = Join-Path $userDotnetRoot "dotnet.exe"
+    if (Test-Path -LiteralPath $userDotnetExe) {
+        $env:DOTNET_ROOT = $userDotnetRoot
+        if ($env:PATH -notmatch [regex]::Escape($userDotnetRoot)) {
+            $env:PATH = "$userDotnetRoot;$env:PATH"
+        }
     }
 }
 
@@ -137,11 +149,58 @@ function Get-ProjectRoot {
     return Split-Path -Parent $MyInvocation.MyCommand.Path
 }
 
+function Get-ProjectPropertyValue {
+    param(
+        [Parameter(Mandatory)] [string]$ProjectPath,
+        [Parameter(Mandatory)] [string]$PropertyName
+    )
+
+    if (-not (Test-Path -LiteralPath $ProjectPath)) { return $null }
+    try {
+        [xml]$proj = Get-Content -LiteralPath $ProjectPath -Raw
+        foreach ($pg in $proj.Project.PropertyGroup) {
+            $value = $pg.$PropertyName
+            if ($value) { return [string]$value }
+        }
+    } catch { }
+    return $null
+}
+
+function Get-FriendlyExeName {
+    param(
+        [Parameter(Mandatory)] [string]$PublishedExe,
+        [Parameter(Mandatory)] [string]$ProjectPath
+    )
+
+    $product = Get-ProjectPropertyValue -ProjectPath $ProjectPath -PropertyName "Product"
+    if (-not $product) { $product = "Flux" }
+
+    $version = $null
+    try {
+        $info = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($PublishedExe)
+        if ($info -and $info.ProductVersion) {
+            $version = $info.ProductVersion.Split('+')[0]
+        }
+    } catch { }
+
+    if (-not $version) {
+        $version = Get-ProjectPropertyValue -ProjectPath $ProjectPath -PropertyName "BaseVersion"
+        if (-not $version) {
+            $version = Get-ProjectPropertyValue -ProjectPath $ProjectPath -PropertyName "Version"
+        }
+        if ($version -and $version -match '^\$\(') { $version = $null }
+    }
+
+    if (-not $version) { $version = "0.0.0" }
+    return "$product v$version.exe"
+}
+
 try {
     $root = Get-ProjectRoot
     Set-Location -LiteralPath $root
 
     Write-Info "Working directory: $root"
+    Ensure-DotnetOnPath
     Assert-CommandExists "dotnet"
 
     $projectPath = Join-Path $root "Flux.Presentation/Flux.Presentation.csproj"
@@ -186,7 +245,11 @@ try {
     if (-not $SkipCopy) {
         $desktop = Get-DesktopPath
         if ($PublishSingleFile) {
-            $copyName = if ($UseTimestamp) { "$(Get-Date -Format 'yyyyMMdd-HHmmss')-$([IO.Path]::GetFileName($publishedExe))" } else { [IO.Path]::GetFileName($publishedExe) }
+            $baseName = [IO.Path]::GetFileName($publishedExe)
+            if ($UseFriendlyName) {
+                $baseName = Get-FriendlyExeName -PublishedExe $publishedExe -ProjectPath $projectPath
+            }
+            $copyName = if ($UseTimestamp) { "$(Get-Date -Format 'yyyyMMdd-HHmmss')-$baseName" } else { $baseName }
             $destination = Join-Path $desktop $copyName
             Copy-Item -LiteralPath $publishedExe -Destination $destination -Force
             Write-Info "Copied single-file exe to Desktop: $destination"
