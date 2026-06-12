@@ -68,7 +68,7 @@ public enum HotkeyModifiers
     Alt = 1,
     Control = 2,
     Shift = 4,
-    Meta = 8  // Windows key on Windows, Command on macOS
+    Meta = 8  // Windows key
 }
 
 /// <summary>
