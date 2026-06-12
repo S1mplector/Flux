@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -15,9 +15,7 @@
     <AssemblyVersion>$(BaseVersion).0</AssemblyVersion>
     <Product>Flux</Product>
     <Company>Flux</Company>
-    
-    <!-- macOS specific -->
-    <RuntimeIdentifiers>win-x64;osx-x64;osx-arm64;linux-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,12 +45,6 @@
   <ItemGroup>
     <AvaloniaResource Include="Resources\**" Condition="Exists('Resources')" />
   </ItemGroup>
-
-  <!-- Conditional platform packages -->
-  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
-  </ItemGroup>
-
   <Target Name="PopulateGitInfo" BeforeTargets="GenerateAssemblyInfo" Condition="'$(GitCommitIdShort)' == ''">
     <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" IgnoreExitCode="true" StandardOutputImportance="low">
       <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitIdShort" />

@@ -1,7 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
@@ -64,16 +62,7 @@ public partial class OverlayWindow : Window
 
     private void SetupPlatformWindow()
     {
-        // Make window click-through by default
-        // Platform-specific implementations will handle this
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            SetupWindowsOverlay();
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            SetupMacOSOverlay();
-        }
+        SetupWindowsOverlay();
     }
 
     private void SetupWindowsOverlay()
@@ -90,32 +79,11 @@ public partial class OverlayWindow : Window
         };
     }
 
-    private void SetupMacOSOverlay()
-    {
-        // macOS-specific: Configure NSWindow properties
-        this.Opened += (_, _) =>
-        {
-            var platformHandle = GetNativePlatformHandle();
-            if (platformHandle != IntPtr.Zero)
-            {
-                MacOSInterop.ApplyOverlayStyles(platformHandle);
-            }
-        };
-    }
-
     public void SetClickThrough(bool clickThrough)
     {
         var handle = GetNativePlatformHandle();
         if (handle == IntPtr.Zero) return;
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            WindowsInterop.SetClickThrough(handle, clickThrough);
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            MacOSInterop.SetClickThrough(handle, clickThrough);
-        }
+        WindowsInterop.SetClickThrough(handle, clickThrough);
     }
 
     private IntPtr GetNativePlatformHandle()
@@ -197,7 +165,6 @@ internal static class WindowsInterop
 
     public static void ApplyOverlayStyles(IntPtr hWnd)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
         var exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
         exStyle |= WS_EX_TOOLWINDOW | WS_EX_LAYERED;
         SetWindowLong(hWnd, GWL_EXSTYLE, exStyle);
@@ -205,40 +172,11 @@ internal static class WindowsInterop
 
     public static void SetClickThrough(IntPtr hWnd, bool clickThrough)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return;
         var exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
         if (clickThrough)
             exStyle |= WS_EX_TRANSPARENT;
         else
             exStyle &= ~WS_EX_TRANSPARENT;
         SetWindowLong(hWnd, GWL_EXSTYLE, exStyle);
-    }
-}
-
-internal static class MacOSInterop
-{
-    // NSWindowCollectionBehavior flags
-    private const long NSWindowCollectionBehaviorCanJoinAllSpaces = 1 << 0;
-    private const long NSWindowCollectionBehaviorStationary = 1 << 4;
-    private const long NSWindowCollectionBehaviorIgnoresCycle = 1 << 6;
-
-    public static void ApplyOverlayStyles(IntPtr nsWindowPtr)
-    {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
-
-        // These would require Objective-C runtime calls
-        // For now, Avalonia handles basic transparency
-        // Full implementation would use:
-        // - [NSWindow setLevel:] for window level
-        // - [NSWindow setCollectionBehavior:] for space behavior
-        // - [NSWindow setIgnoresMouseEvents:] for click-through
-    }
-
-    public static void SetClickThrough(IntPtr nsWindowPtr, bool clickThrough)
-    {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
-
-        // Would call [NSWindow setIgnoresMouseEvents:clickThrough]
-        // Requires Objective-C runtime interop
     }
 }

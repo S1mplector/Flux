@@ -8,11 +8,8 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Flux.Application.Abstractions;
-using Flux.Application.Services;
-using Flux.Domain;
-using Flux.Infrastructure.Audio;
-using Flux.Infrastructure.Platform;
-using Flux.Infrastructure.Settings;
+using Flux.Application.DependencyInjection;
+using Flux.Infrastructure.DependencyInjection;
 using Flux.Avalonia.Services;
 using Flux.Avalonia.Views;
 
@@ -38,28 +35,8 @@ public partial class App : global::Avalonia.Application
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                // Platform services
-                services.AddSingleton<IPlatformInfo, PlatformInfo>();
-                
-                // Settings
-                var platformInfo = new PlatformInfo();
-                services.AddSingleton<ISettingsPort>(sp => 
-                    new JsonSettingsRepository(platformInfo.AppDataDirectory));
-                
-                // Audio - use factory for platform-appropriate implementation
-                services.AddSingleton<IAudioInputPort>(sp =>
-                {
-                    var settingsPort = sp.GetRequiredService<ISettingsPort>();
-                    var settings = settingsPort.GetAsync().GetAwaiter().GetResult();
-                    return AudioInputFactory.Create(settings.AudioDeviceId);
-                });
-                services.AddSingleton<IAudioDeviceProvider>(sp => AudioDeviceProviderFactory.Create());
-                
-                // Application services
-                services.AddSingleton<SpectrumProcessor>();
-                services.AddSingleton<IFluxService, FluxService>();
-                
-                // Platform-specific services
+                services.AddEqualizerApplication();
+                services.AddEqualizerInfrastructure();
                 services.AddSingleton<IScreenProvider, AvaloniaScreenProvider>();
                 
                 // Views - use transient for windows that can be opened multiple times

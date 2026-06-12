@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
 using global::Avalonia;
 using global::Avalonia.Controls;
 using global::Avalonia.Controls.ApplicationLifetimes;
@@ -42,16 +41,16 @@ public class TrayIconManager : IDisposable
         clickThroughItem.Click += async (_, _) =>
         {
             await _overlayManager.ToggleClickThroughAsync();
-            clickThroughItem.Header = _overlayManager.ClickThrough ? "✓ Click-through" : "Click-through";
+            clickThroughItem.Header = _overlayManager.ClickThrough ? "[x] Click-through" : "Click-through";
         };
-        clickThroughItem.Header = _overlayManager.ClickThrough ? "✓ Click-through" : "Click-through";
+        clickThroughItem.Header = _overlayManager.ClickThrough ? "[x] Click-through" : "Click-through";
         menu.Add(clickThroughItem);
 
         var alwaysOnTopItem = new NativeMenuItem("Always on Top");
         alwaysOnTopItem.Click += async (_, _) =>
         {
             await _overlayManager.ToggleAlwaysOnTopAsync();
-            alwaysOnTopItem.Header = _overlayManager.AlwaysOnTop ? "✓ Always on Top" : "Always on Top";
+            alwaysOnTopItem.Header = _overlayManager.AlwaysOnTop ? "[x] Always on Top" : "Always on Top";
         };
         menu.Add(alwaysOnTopItem);
 
